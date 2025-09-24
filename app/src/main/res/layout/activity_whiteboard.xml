@@ -68,7 +68,7 @@
             android:gravity="center"
             android:layout_marginBottom="12dp">
             <ImageButton
-                android:id="@+id/btn_flash"
+                android:id="@+id/btn_draw"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/circular_button_background"

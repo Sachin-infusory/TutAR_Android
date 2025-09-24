@@ -1,4 +1,4 @@
-// WhiteboardActivity.kt - Updated with Model Browser Integration
+// WhiteboardActivity.kt - Updated with Annotation Tool Integration
 package com.infusory.tutarapp.ui.whiteboard
 
 import android.os.Bundle
@@ -8,6 +8,7 @@ import com.infusory.tutarapp.R
 import com.infusory.tutarapp.ui.containers.Container3D
 import com.infusory.tutarapp.ui.data.ModelData
 import com.infusory.tutarapp.ui.models.ModelBrowserDrawer
+import com.infusory.tutarapp.ui.annotation.AnnotationToolView
 import com.infusory.tutarapp.ui.utils.containers.ContainerManager
 
 class WhiteboardActivity : AppCompatActivity() {
@@ -16,6 +17,9 @@ class WhiteboardActivity : AppCompatActivity() {
     private lateinit var mainLayout: android.widget.RelativeLayout
     private lateinit var containerManager: ContainerManager
     private var modelBrowserDrawer: ModelBrowserDrawer? = null
+
+    // Annotation tool
+    private var annotationTool: AnnotationToolView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,6 +36,31 @@ class WhiteboardActivity : AppCompatActivity() {
     private fun initViews() {
         surfaceView = findViewById(R.id.surface_view)
         mainLayout = findViewById(R.id.main)
+
+        // Initialize annotation tool
+        setupAnnotationTool()
+    }
+
+    private fun setupAnnotationTool() {
+        annotationTool = AnnotationToolView(this)
+        val layoutParams = android.widget.RelativeLayout.LayoutParams(
+            android.widget.RelativeLayout.LayoutParams.MATCH_PARENT,
+            android.widget.RelativeLayout.LayoutParams.MATCH_PARENT
+        )
+        annotationTool?.layoutParams = layoutParams
+
+        // Add annotation tool to main layout with high elevation to stay on top
+        annotationTool?.elevation = 200f
+        mainLayout.addView(annotationTool)
+
+        // Set callback for annotation toggle
+        annotationTool?.onAnnotationToggle = { isEnabled ->
+            if (isEnabled) {
+                Toast.makeText(this, "Annotation mode enabled", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Annotation mode disabled", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun setupContainerManager() {
@@ -61,9 +90,18 @@ class WhiteboardActivity : AppCompatActivity() {
     }
 
     private fun setupButtonListeners() {
-        // Left side button - Show add container menu
+        // FIRST LEFT BUTTON - Toggle annotation mode (btn_draw)
+        findViewById<android.widget.ImageButton>(R.id.btn_draw).setOnClickListener {
+            annotationTool?.toggleAnnotationMode()
+        }
+
+        // Left side button - Show add container menu (UPDATED to handle annotation mode)
         findViewById<android.widget.ImageButton>(R.id.btn_add).setOnClickListener {
-            showAddContainerMenu()
+            if (annotationTool?.isInAnnotationMode() == true) {
+                showAnnotationMenu()
+            } else {
+                showAddContainerMenu()
+            }
         }
 
         // Right side button - Add 3D container directly
@@ -79,6 +117,26 @@ class WhiteboardActivity : AppCompatActivity() {
         findViewById<android.widget.ImageButton>(R.id.btn_menu_rt).setOnClickListener {
             showContainerManagementMenu()
         }
+    }
+
+    // NEW METHOD: Show annotation controls menu
+    private fun showAnnotationMenu() {
+        val options = arrayOf(
+            "Clear All Annotations",
+            "Undo Last Annotation",
+            "Exit Annotation Mode"
+        )
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Annotation Controls")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> annotationTool?.clearAllAnnotations()
+                    1 -> annotationTool?.undoLastAnnotation()
+                    2 -> annotationTool?.toggleAnnotationMode(false)
+                }
+            }
+            .show()
     }
 
     private fun showModelBrowser() {
@@ -349,7 +407,15 @@ class WhiteboardActivity : AppCompatActivity() {
         modelBrowserDrawer?.dismiss()
     }
 
+    // UPDATED: Handle annotation mode in back press
     override fun onBackPressed() {
+        // First check if annotation mode is active
+        if (annotationTool?.isInAnnotationMode() == true) {
+            annotationTool?.toggleAnnotationMode(false)
+            return
+        }
+
+        // Then handle normal whiteboard exit logic
         if (containerManager.getContainerCount() > 0) {
             android.app.AlertDialog.Builder(this)
                 .setTitle("Save Whiteboard?")
