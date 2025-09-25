@@ -43,7 +43,7 @@ class ModelBrowserDrawer(
         if (classesData.isNotEmpty()) {
             createAndShowDialog()
         } else {
-            Toast.makeText(context, "class_data.json file missing in models folder", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "class_list_demo.json file missing in models folder", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -52,9 +52,8 @@ class ModelBrowserDrawer(
             val gson = Gson()
             val listType = object : TypeToken<List<ClassData>>() {}.type
 
-            // Try assets folder first
             try {
-                val inputStream = context.assets.open("class_data.json")
+                val inputStream = context.assets.open("class_list_demo.json")
                 val jsonString = inputStream.bufferedReader().use { it.readText() }
                 inputStream.close()
 

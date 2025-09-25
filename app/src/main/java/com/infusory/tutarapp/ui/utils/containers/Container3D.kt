@@ -21,6 +21,7 @@ import com.google.android.filament.utils.Utils
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import android.graphics.PixelFormat
+import com.infusory.tutarapp.ui.data.ModelData
 
 
 class Container3D @JvmOverloads constructor(
@@ -71,6 +72,9 @@ class Container3D @JvmOverloads constructor(
     private var isInitialized = false
     private var isRenderingActive = false
 
+    private var customModelData: ModelData? = null
+    private var customModelPath: String? = null
+
     init {
         // Disable background for main container since content container will have it
         showBackground = false
@@ -81,6 +85,11 @@ class Container3D @JvmOverloads constructor(
     fun setTouchEnabled(enabled: Boolean) {
         touchEnabled = enabled
         updateTouchHandling()
+    }
+
+    fun setModelData(modelData: ModelData, fullPath: String) {
+        this.customModelData = modelData
+        this.customModelPath = fullPath
     }
 
     /**
@@ -439,39 +448,98 @@ class Container3D @JvmOverloads constructor(
 //    }
 
     private fun loadModel() {
-        val modelFile = modelFiles[modelIndex % modelFiles.size]
-
         try {
-            val buffer = context.assets.open(modelFile).use { input ->
-                val bytes = ByteArray(input.available())
-                input.read(bytes)
-                ByteBuffer.allocateDirect(bytes.size).apply {
-                    order(ByteOrder.nativeOrder())
-                    put(bytes)
-                    rewind()
-                }
+            val buffer = if (customModelData != null && customModelPath != null) {
+                // Load custom model from model browser selection
+                loadCustomModelBuffer()
+            } else {
+                // Load default model using modelIndex
+                loadDefaultModelBuffer()
             }
 
-            modelViewer?.apply {
-                loadModelGlb(buffer)
-                transformToUnitCube()
+            buffer?.let { modelBuffer ->
+                modelViewer?.apply {
+                    loadModelGlb(modelBuffer)
+                    transformToUnitCube()
 
-                // Clear and setup scene
-                val scene = this.scene
-                val asset = this.asset
+                    // Clear and setup scene
+                    val scene = this.scene
+                    val asset = this.asset
 
-                asset?.let {
-                    // Remove all entities first
-                    it.entities.forEach { entity -> scene.removeEntity(entity) }
+                    asset?.let {
+                        // Remove all entities first
+                        it.entities.forEach { entity -> scene.removeEntity(entity) }
 
-                    // Add back the main entity
-                    if (it.entities.isNotEmpty()) {
-                        scene.addEntity(it.entities[0])
+                        // Add back the main entity
+                        if (it.entities.isNotEmpty()) {
+                            scene.addEntity(it.entities[0])
+                        }
                     }
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.e("Container3D", "Failed to load model: $modelFile", e)
+            val modelName = customModelData?.name ?: "Model ${modelIndex + 1}"
+            android.util.Log.e("Container3D", "Failed to load model: $modelName", e)
+        }
+    }
+
+    private fun loadCustomModelBuffer(): ByteBuffer? {
+        return try {
+            val modelFileName = customModelData?.filename ?: return null
+
+            // Try different locations for the model file
+            val buffer = try {
+                // Try assets first
+                context.assets.open("models/$modelFileName").use { input ->
+                    createBufferFromStream(input)
+                }
+            } catch (e: Exception) {
+                try {
+                    // Try external storage
+                    val externalFile = java.io.File(context.getExternalFilesDir(null), "models/$modelFileName")
+                    if (externalFile.exists()) {
+                        externalFile.inputStream().use { input ->
+                            createBufferFromStream(input)
+                        }
+                    } else {
+                        // Try internal storage
+                        val internalFile = java.io.File(context.filesDir, "models/$modelFileName")
+                        internalFile.inputStream().use { input ->
+                            createBufferFromStream(input)
+                        }
+                    }
+                } catch (e2: Exception) {
+                    android.util.Log.e("Container3D", "Custom model not found in any location: $modelFileName", e2)
+                    null
+                }
+            }
+
+            buffer
+        } catch (e: Exception) {
+            android.util.Log.e("Container3D", "Error loading custom model: ${customModelData?.filename}", e)
+            null
+        }
+    }
+
+    private fun loadDefaultModelBuffer(): ByteBuffer? {
+        return try {
+            val modelFile = modelFiles[modelIndex % modelFiles.size]
+            context.assets.open(modelFile).use { input ->
+                createBufferFromStream(input)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("Container3D", "Error loading default model", e)
+            null
+        }
+    }
+
+    private fun createBufferFromStream(inputStream: java.io.InputStream): ByteBuffer {
+        val bytes = ByteArray(inputStream.available())
+        inputStream.read(bytes)
+        return ByteBuffer.allocateDirect(bytes.size).apply {
+            order(ByteOrder.nativeOrder())
+            put(bytes)
+            rewind()
         }
     }
 

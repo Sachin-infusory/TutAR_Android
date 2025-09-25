@@ -1,15 +1,24 @@
-// WhiteboardActivity.kt - Updated with Annotation Tool Integration
+// WhiteboardActivity.kt - Updated with Camera Feed Integration
 package com.infusory.tutarapp.ui.whiteboard
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.camera.core.*
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import com.infusory.tutarapp.R
 import com.infusory.tutarapp.ui.containers.Container3D
 import com.infusory.tutarapp.ui.data.ModelData
 import com.infusory.tutarapp.ui.models.ModelBrowserDrawer
 import com.infusory.tutarapp.ui.annotation.AnnotationToolView
 import com.infusory.tutarapp.ui.utils.containers.ContainerManager
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class WhiteboardActivity : AppCompatActivity() {
 
@@ -21,14 +30,29 @@ class WhiteboardActivity : AppCompatActivity() {
     // Annotation tool
     private var annotationTool: AnnotationToolView? = null
 
+    // Camera components
+    private var cameraPreviewView: PreviewView? = null
+    private var cameraProvider: ProcessCameraProvider? = null
+    private var preview: Preview? = null
+    private var camera: Camera? = null
+    private lateinit var cameraExecutor: ExecutorService
+    private var isCameraActive = false
+
+    // Camera permission request code
+    private val CAMERA_PERMISSION_REQUEST_CODE = 100
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_whiteboard)
+
+        // Initialize camera executor
+        cameraExecutor = Executors.newSingleThreadExecutor()
 
         initViews()
         setupContainerManager()
         setupButtonListeners()
         setupModelBrowser()
+        setupCameraPreview()
 
         Toast.makeText(this, "Welcome to TutAR Whiteboard with 3D!", Toast.LENGTH_LONG).show()
     }
@@ -41,11 +65,30 @@ class WhiteboardActivity : AppCompatActivity() {
         setupAnnotationTool()
     }
 
+    private fun setupCameraPreview() {
+        // Create PreviewView programmatically
+        cameraPreviewView = PreviewView(this)
+        val layoutParams = android.widget.RelativeLayout.LayoutParams(
+            android.widget.RelativeLayout.LayoutParams.MATCH_PARENT,
+            android.widget.RelativeLayout.LayoutParams.MATCH_PARENT
+        )
+        cameraPreviewView?.layoutParams = layoutParams
+
+        // Set elevation lower than surface view but higher than background
+        cameraPreviewView?.elevation = 1f
+
+        // Initially hide the camera preview
+        cameraPreviewView?.visibility = android.view.View.GONE
+
+        // Add to main layout
+        mainLayout.addView(cameraPreviewView, 0) // Add at index 0 to be behind other views
+    }
+
     private fun setupAnnotationTool() {
         annotationTool = AnnotationToolView(this)
         val layoutParams = android.widget.RelativeLayout.LayoutParams(
             android.widget.RelativeLayout.LayoutParams.MATCH_PARENT,
-            android.widget.RelativeLayout.LayoutParams.MATCH_PARENT
+            android.widget.RelativeLayout.LayoutParams.MATCH_PARENT,
         )
         annotationTool?.layoutParams = layoutParams
 
@@ -59,6 +102,15 @@ class WhiteboardActivity : AppCompatActivity() {
                 Toast.makeText(this, "Annotation mode enabled", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Annotation mode disabled", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Connect drawing state changes to 3D rendering control
+        annotationTool?.onDrawingStateChanged = { isDrawing ->
+            if (isDrawing) {
+                pauseAll3DRenderingForDrawing()
+            } else {
+                resumeAll3DRenderingAfterDrawing()
             }
         }
     }
@@ -95,6 +147,11 @@ class WhiteboardActivity : AppCompatActivity() {
             annotationTool?.toggleAnnotationMode()
         }
 
+        // AR/Camera Button - Toggle camera feed (btn_ar)
+        findViewById<android.widget.ImageButton>(R.id.btn_ar).setOnClickListener {
+            toggleCameraFeed()
+        }
+
         // Left side button - Show add container menu (UPDATED to handle annotation mode)
         findViewById<android.widget.ImageButton>(R.id.btn_add).setOnClickListener {
             if (annotationTool?.isInAnnotationMode() == true) {
@@ -104,12 +161,12 @@ class WhiteboardActivity : AppCompatActivity() {
             }
         }
 
-        // Right side button - Add 3D container directly
+        // Right side button - Show model browser for 3D models
         findViewById<android.widget.ImageButton>(R.id.btn_add_rt).setOnClickListener {
-            show3DModelSelectionDialog()
+            showModelBrowser()
         }
 
-        // Menu buttons - UPDATED: Left menu now shows model browser
+        // Menu buttons - Left menu shows model browser
         findViewById<android.widget.ImageButton>(R.id.btn_menu).setOnClickListener {
             showModelBrowser()
         }
@@ -119,7 +176,117 @@ class WhiteboardActivity : AppCompatActivity() {
         }
     }
 
-    // NEW METHOD: Show annotation controls menu
+    private fun toggleCameraFeed() {
+        if (isCameraActive) {
+            stopCamera()
+        } else {
+            if (checkCameraPermission()) {
+                startCamera()
+            } else {
+                requestCameraPermission()
+            }
+        }
+    }
+
+    private fun checkCameraPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun requestCameraPermission() {
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.CAMERA),
+            CAMERA_PERMISSION_REQUEST_CODE
+        )
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        when (requestCode) {
+            CAMERA_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    startCamera()
+                } else {
+                    Toast.makeText(
+                        this,
+                        "Camera permission is required for AR features",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+
+    private fun startCamera() {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+
+        cameraProviderFuture.addListener({
+            try {
+                // Used to bind the lifecycle of cameras to the lifecycle owner
+                cameraProvider = cameraProviderFuture.get()
+
+                // Preview
+                preview = Preview.Builder().build().also {
+                    it.setSurfaceProvider(cameraPreviewView?.surfaceProvider)
+                }
+
+                // Select back camera as a default
+                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+                try {
+                    // Unbind use cases before rebinding
+                    cameraProvider?.unbindAll()
+
+                    // Bind use cases to camera
+                    camera = cameraProvider?.bindToLifecycle(
+                        this, cameraSelector, preview
+                    )
+
+                    // Show camera preview
+                    cameraPreviewView?.visibility = android.view.View.VISIBLE
+                    // Hide the surface view
+                    surfaceView.visibility = android.view.View.GONE
+
+                    isCameraActive = true
+                    Toast.makeText(this, "Camera activated - AR mode enabled", Toast.LENGTH_SHORT).show()
+
+                } catch (exc: Exception) {
+                    Toast.makeText(this, "Failed to start camera: ${exc.message}", Toast.LENGTH_LONG).show()
+                }
+
+            } catch (exc: Exception) {
+                Toast.makeText(this, "Camera initialization failed: ${exc.message}", Toast.LENGTH_LONG).show()
+            }
+        }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun stopCamera() {
+        try {
+            // Unbind all use cases
+            cameraProvider?.unbindAll()
+
+            // Hide camera preview
+            cameraPreviewView?.visibility = android.view.View.GONE
+            // Show surface view again
+            surfaceView.visibility = android.view.View.VISIBLE
+
+            isCameraActive = false
+            Toast.makeText(this, "Camera deactivated - Normal mode", Toast.LENGTH_SHORT).show()
+
+        } catch (exc: Exception) {
+            Toast.makeText(this, "Failed to stop camera: ${exc.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Show annotation controls menu
     private fun showAnnotationMenu() {
         val options = arrayOf(
             "Clear All Annotations",
@@ -147,11 +314,10 @@ class WhiteboardActivity : AppCompatActivity() {
         val containerTypes = arrayOf(
             "Standard Container",
             "Text Container",
-            "3D Model Container",
-            "3D Model from Library",
             "Image Container",
             "Minimal Container",
-            "Read-Only Container"
+            "Read-Only Container",
+            "3D Model (Browse Library)"
         )
 
         android.app.AlertDialog.Builder(this)
@@ -160,65 +326,12 @@ class WhiteboardActivity : AppCompatActivity() {
                 when (which) {
                     0 -> containerManager.addStandardContainer()
                     1 -> containerManager.addTextContainer()
-                    2 -> show3DModelSelectionDialog()
-                    3 -> showModelBrowser()
-                    4 -> containerManager.addImageContainer()
-                    5 -> containerManager.addMinimalContainer()
-                    6 -> containerManager.addReadOnlyContainer()
+                    2 -> containerManager.addImageContainer()
+                    3 -> containerManager.addMinimalContainer()
+                    4 -> containerManager.addReadOnlyContainer()
+                    5 -> showModelBrowser()
                 }
             }
-            .show()
-    }
-
-    private fun show3DModelSelectionDialog() {
-        val modelNames = arrayOf(
-            "Model 1: Eagle",
-            "Model 2: Skeleton",
-            "Model 3: Alternative",
-            "Model 4: Custom"
-        )
-
-        android.app.AlertDialog.Builder(this)
-            .setTitle("Select 3D Model")
-            .setItems(modelNames) { _, which ->
-                create3DContainer(which)
-            }
-            .show()
-    }
-
-    private fun create3DContainer(modelIndex: Int) {
-        if (containerManager.getContainerCount() >= 8) {
-            Toast.makeText(this, "Maximum containers reached", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // Create Container3D with specific model index
-        val container3D = Container3D(this, modelIndex)
-
-        // Set layout params
-        val layoutParams = android.widget.RelativeLayout.LayoutParams(
-            container3D.getDefaultWidth(),
-            container3D.getDefaultHeight()
-        )
-        container3D.layoutParams = layoutParams
-
-        // Position with offset
-        val offsetX = containerManager.getContainerCount() * 60f
-        val offsetY = containerManager.getContainerCount() * 60f + 100f
-        container3D.moveContainerTo(offsetX, offsetY, animate = false)
-
-        // Set removal callback
-        container3D.onRemoveRequest = {
-            containerManager.removeContainer(container3D)
-        }
-
-        // Add to layout manually (since ContainerManager doesn't handle custom 3D creation)
-        mainLayout.addView(container3D)
-
-        // Initialize content (this calls initializeContent() internally)
-        container3D.initializeContent()
-
-        Toast.makeText(this, "3D Container added (Model ${modelIndex + 1})", Toast.LENGTH_SHORT)
             .show()
     }
 
@@ -228,10 +341,11 @@ class WhiteboardActivity : AppCompatActivity() {
             return
         }
 
-        // For now, create a basic 3D container with model index 0
-        // In a full implementation, you'd modify Container3D to accept custom model files
-        val container3D =
-            Container3D(this, 0) // You'll need to modify Container3D to handle custom models
+        // Create Container3D with default constructor, then set model data
+        val container3D = Container3D(this)
+
+        // Set the model data after creation
+        container3D.setModelData(modelData, fullPath)
 
         // Set layout params
         val layoutParams = android.widget.RelativeLayout.LayoutParams(
@@ -240,7 +354,7 @@ class WhiteboardActivity : AppCompatActivity() {
         )
         container3D.layoutParams = layoutParams
 
-        // Position with offset
+        // Position with offset based on existing container count
         val offsetX = containerManager.getContainerCount() * 60f
         val offsetY = containerManager.getContainerCount() * 60f + 100f
         container3D.moveContainerTo(offsetX, offsetY, animate = false)
@@ -250,11 +364,55 @@ class WhiteboardActivity : AppCompatActivity() {
             containerManager.removeContainer(container3D)
         }
 
-        // Add to layout
+        // Add to layout and initialize
         mainLayout.addView(container3D)
         container3D.initializeContent()
 
         Toast.makeText(this, "3D Model loaded: ${modelData.name}", Toast.LENGTH_LONG).show()
+    }
+
+    fun pauseAll3DRenderingForDrawing() {
+        // Get 3D containers from containerManager (managed containers)
+        val managedContainer3Ds = containerManager.getAllContainers().filterIsInstance<Container3D>()
+
+        // Also get 3D containers directly from mainLayout (direct containers)
+        val directContainer3Ds = mutableListOf<Container3D>()
+        for (i in 0 until mainLayout.childCount) {
+            val child = mainLayout.getChildAt(i)
+            if (child is Container3D) {
+                directContainer3Ds.add(child)
+            }
+        }
+
+        // Combine both lists and remove duplicates
+        val allContainer3Ds = (managedContainer3Ds + directContainer3Ds).distinct()
+
+        android.util.Log.d("DEBUG", "Pausing ${allContainer3Ds.size} 3D containers")
+
+        allContainer3Ds.forEach { container ->
+            container.pauseRendering()
+        }
+    }
+
+    fun resumeAll3DRenderingAfterDrawing() {
+        // Same logic for resume
+        val managedContainer3Ds = containerManager.getAllContainers().filterIsInstance<Container3D>()
+
+        val directContainer3Ds = mutableListOf<Container3D>()
+        for (i in 0 until mainLayout.childCount) {
+            val child = mainLayout.getChildAt(i)
+            if (child is Container3D) {
+                directContainer3Ds.add(child)
+            }
+        }
+
+        val allContainer3Ds = (managedContainer3Ds + directContainer3Ds).distinct()
+
+        android.util.Log.d("DEBUG", "Resuming ${allContainer3Ds.size} 3D containers")
+
+        allContainer3Ds.forEach { container ->
+            container.resumeRendering()
+        }
     }
 
     private fun showContainerManagementMenu() {
@@ -268,7 +426,8 @@ class WhiteboardActivity : AppCompatActivity() {
             "Pause All 3D Rendering",
             "Resume All 3D Rendering",
             "Container Statistics",
-            "Clear All Containers"
+            "Clear All Containers",
+            if (isCameraActive) "Stop Camera" else "Start Camera"
         )
 
         android.app.AlertDialog.Builder(this)
@@ -281,31 +440,14 @@ class WhiteboardActivity : AppCompatActivity() {
                     3 -> containerManager.arrangeContainersInGrid()
                     4 -> containerManager.toggleDraggingForAllContainers()
                     5 -> containerManager.toggleResizingForAllContainers()
-                    6 -> pauseAll3DRendering()
-                    7 -> resumeAll3DRendering()
+                    6 -> pauseAll3DRenderingForDrawing()
+                    7 -> resumeAll3DRenderingAfterDrawing()
                     8 -> showContainerStatistics()
                     9 -> containerManager.clearAllContainers()
+                    10 -> toggleCameraFeed()
                 }
             }
             .show()
-    }
-
-    private fun pauseAll3DRendering() {
-        containerManager.getAllContainers().forEach { container ->
-            if (container is Container3D) {
-                container.pauseRendering()
-            }
-        }
-        Toast.makeText(this, "All 3D rendering paused", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun resumeAll3DRendering() {
-        containerManager.getAllContainers().forEach { container ->
-            if (container is Container3D) {
-                container.resumeRendering()
-            }
-        }
-        Toast.makeText(this, "All 3D rendering resumed", Toast.LENGTH_SHORT).show()
     }
 
     private fun showContainerStatistics() {
@@ -316,6 +458,7 @@ class WhiteboardActivity : AppCompatActivity() {
             Total Containers: ${allContainers.size}
             Regular Containers: ${allContainers.size - container3Ds.size}
             3D Containers: ${container3Ds.size}
+            Camera Status: ${if (isCameraActive) "Active" else "Inactive"}
             
             3D Models:
             ${
@@ -341,6 +484,7 @@ class WhiteboardActivity : AppCompatActivity() {
 
         // Simple save - you might want to use JSON for complex data
         editor.putInt("container_count", stateData.containers.size)
+        editor.putBoolean("camera_active", isCameraActive)
 
         stateData.containers.forEachIndexed { index, containerState ->
             editor.putString("container_${index}_type", containerState.type.name)
@@ -391,25 +535,38 @@ class WhiteboardActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         // Pause all 3D rendering to save battery
-        pauseAll3DRendering()
+        pauseAll3DRenderingForDrawing()
+        // Optionally pause camera when app is not in foreground
+        if (isCameraActive) {
+            stopCamera()
+        }
     }
 
     override fun onResume() {
         super.onResume()
         // Resume 3D rendering
-        resumeAll3DRendering()
+        resumeAll3DRenderingAfterDrawing()
+        // Note: Camera will need to be manually restarted by user
     }
 
     override fun onDestroy() {
         super.onDestroy()
         // Ensure cleanup
-        pauseAll3DRendering()
+        stopCamera()
+        cameraExecutor.shutdown()
+        pauseAll3DRenderingForDrawing()
         modelBrowserDrawer?.dismiss()
     }
 
-    // UPDATED: Handle annotation mode in back press
+    // Handle annotation mode and camera in back press
     override fun onBackPressed() {
-        // First check if annotation mode is active
+        // First check if camera is active
+        if (isCameraActive) {
+            stopCamera()
+            return
+        }
+
+        // Then check if annotation mode is active
         if (annotationTool?.isInAnnotationMode() == true) {
             annotationTool?.toggleAnnotationMode(false)
             return

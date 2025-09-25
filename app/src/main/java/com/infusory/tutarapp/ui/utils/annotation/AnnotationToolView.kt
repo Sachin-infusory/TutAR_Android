@@ -1,4 +1,4 @@
-// AnnotationToolView.kt - Complete annotation system in one file
+// AnnotationToolView.kt - Fixed to use callbacks instead of direct access
 package com.infusory.tutarapp.ui.annotation
 
 import android.content.Context
@@ -150,7 +150,6 @@ class AnnotationToolbar @JvmOverloads constructor(
 
             background = createButtonBackground(false)
             setImageResource(iconRes)
-//            scaleType = ImageButton.ScaleType.CENTER_INSIDE
             setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
             this.contentDescription = contentDescription
 
@@ -167,7 +166,6 @@ class AnnotationToolbar @JvmOverloads constructor(
 
             background = createButtonBackground(false)
             setImageResource(iconRes)
-//            scaleType = ImageButton.ScaleType.CENTER_INSIDE
             setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
             this.contentDescription = contentDescription
 
@@ -251,10 +249,10 @@ class AnnotationToolbar @JvmOverloads constructor(
 class AnnotationToolView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
+    defStyleAttr: Int = 0,
 ) : RelativeLayout(context, attrs, defStyleAttr) {
 
-    // Drawing surface
+    // Drawing surface - ALWAYS VISIBLE to preserve drawings
     private var drawingView: DrawingView? = null
 
     // Toolbar
@@ -265,17 +263,21 @@ class AnnotationToolView @JvmOverloads constructor(
 
     // Callbacks
     var onAnnotationToggle: ((Boolean) -> Unit)? = null
+    // Callback for 3D rendering control
+    var onDrawingStateChanged: ((isDrawing: Boolean) -> Unit)? = null
 
     init {
         setupAnnotationTool()
     }
 
     private fun setupAnnotationTool() {
-        // Create drawing view
+        // Create drawing view - ALWAYS VISIBLE
         drawingView = DrawingView(context)
         val drawingParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
         drawingView?.layoutParams = drawingParams
-        drawingView?.visibility = View.GONE
+        // Drawing view is always visible but touch is disabled initially
+        drawingView?.visibility = View.VISIBLE
+        drawingView?.setTouchEnabled(false) // Disable touch initially
         addView(drawingView)
 
         // Create toolbar
@@ -285,7 +287,7 @@ class AnnotationToolView @JvmOverloads constructor(
         toolbarParams.addRule(RelativeLayout.CENTER_HORIZONTAL)
         toolbarParams.bottomMargin = 120 // Space from bottom to avoid other UI elements
         annotationToolbar?.layoutParams = toolbarParams
-        annotationToolbar?.visibility = View.GONE
+        annotationToolbar?.visibility = View.GONE // Hidden initially
         addView(annotationToolbar)
 
         // Set up toolbar callbacks
@@ -304,18 +306,25 @@ class AnnotationToolView @JvmOverloads constructor(
         annotationToolbar?.onCloseAnnotation = {
             toggleAnnotationMode(false)
         }
+
+        // Set up drawing state callback
+        drawingView?.onDrawingStateChanged = { isDrawing ->
+            onDrawingStateChanged?.invoke(isDrawing)
+        }
     }
 
     fun toggleAnnotationMode(enable: Boolean? = null) {
         isAnnotationMode = enable ?: !isAnnotationMode
 
         if (isAnnotationMode) {
-            drawingView?.visibility = View.VISIBLE
+            // Show toolbar and enable touch
             annotationToolbar?.visibility = View.VISIBLE
+            drawingView?.setTouchEnabled(true)
             drawingView?.clearSelection()
         } else {
-            drawingView?.visibility = View.GONE
+            // Hide toolbar and disable touch (but keep drawings visible)
             annotationToolbar?.visibility = View.GONE
+            drawingView?.setTouchEnabled(false)
         }
 
         onAnnotationToggle?.invoke(isAnnotationMode)
@@ -353,22 +362,31 @@ class AnnotationToolView @JvmOverloads constructor(
         private var startX = 0f
         private var startY = 0f
         private var isDrawing = false
+        private var touchEnabled = false // Control touch interaction
+
+        // Callback for drawing state changes
+        var onDrawingStateChanged: ((Boolean) -> Unit)? = null
 
         override fun onDraw(canvas: Canvas) {
             super.onDraw(canvas)
 
-            // Draw all saved paths
+            // ALWAYS draw all saved paths (preserves drawings when tools are hidden)
             paths.forEach { drawingPath ->
                 canvas.drawPath(drawingPath.path, drawingPath.paint)
             }
 
             // Draw current path if drawing
-            if (isDrawing) {
+            if (isDrawing && touchEnabled) {
                 canvas.drawPath(currentPath, paint)
             }
         }
 
         override fun onTouchEvent(event: MotionEvent): Boolean {
+            // Only handle touch events if touch is enabled
+            if (!touchEnabled) {
+                return false
+            }
+
             val x = event.x
             val y = event.y
 
@@ -389,11 +407,20 @@ class AnnotationToolView @JvmOverloads constructor(
             return false
         }
 
+        // Method to enable/disable touch interaction
+        fun setTouchEnabled(enabled: Boolean) {
+            touchEnabled = enabled
+        }
+
         private fun startDrawing(x: Float, y: Float) {
             startX = x
             startY = y
             isDrawing = true
             currentPath.reset()
+
+            // REMOVED: Direct calls to containerManager - use callback instead
+            // Notify that drawing has started - pause 3D rendering
+            onDrawingStateChanged?.invoke(true)
 
             when (currentTool) {
                 AnnotationTool.FREE_DRAW -> {
@@ -450,6 +477,11 @@ class AnnotationToolView @JvmOverloads constructor(
                 currentPath.reset()
             }
             isDrawing = false
+
+            // REMOVED: Direct calls to containerManager - use callback instead
+            // Notify that drawing has ended - resume 3D rendering
+            onDrawingStateChanged?.invoke(false)
+
             invalidate()
         }
 
