@@ -1,4 +1,4 @@
-// WhiteboardActivity.kt - Updated with Camera Feed Integration
+// WhiteboardActivity.kt - Updated with AI Master Integration
 package com.infusory.tutarapp.ui.whiteboard
 
 import android.Manifest
@@ -17,6 +17,7 @@ import com.infusory.tutarapp.ui.data.ModelData
 import com.infusory.tutarapp.ui.models.ModelBrowserDrawer
 import com.infusory.tutarapp.ui.annotation.AnnotationToolView
 import com.infusory.tutarapp.ui.utils.containers.ContainerManager
+import com.infusory.tutarapp.ui.ai.AiMasterDrawer
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -26,6 +27,7 @@ class WhiteboardActivity : AppCompatActivity() {
     private lateinit var mainLayout: android.widget.RelativeLayout
     private lateinit var containerManager: ContainerManager
     private var modelBrowserDrawer: ModelBrowserDrawer? = null
+    private var aiMasterDrawer: AiMasterDrawer? = null
 
     // Annotation tool
     private var annotationTool: AnnotationToolView? = null
@@ -52,6 +54,7 @@ class WhiteboardActivity : AppCompatActivity() {
         setupContainerManager()
         setupButtonListeners()
         setupModelBrowser()
+        setupAiMaster()
         setupCameraPreview()
 
         Toast.makeText(this, "Welcome to TutAR Whiteboard with 3D!", Toast.LENGTH_LONG).show()
@@ -141,6 +144,12 @@ class WhiteboardActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupAiMaster() {
+        aiMasterDrawer = AiMasterDrawer(this) { response ->
+            handleAiMasterResponse(response)
+        }
+    }
+
     private fun setupButtonListeners() {
         // FIRST LEFT BUTTON - Toggle annotation mode (btn_draw)
         findViewById<android.widget.ImageButton>(R.id.btn_draw).setOnClickListener {
@@ -187,6 +196,61 @@ class WhiteboardActivity : AppCompatActivity() {
 //            showContainerManagementMenu()
             showModelBrowser()
         }
+
+        // AI Master Button - Show AI Master drawer
+        findViewById<android.widget.ImageButton>(R.id.ai_master_btn).setOnClickListener {
+            showAiMaster()
+        }
+    }
+
+    private fun showAiMaster() {
+        aiMasterDrawer?.show()
+    }
+
+    private fun handleAiMasterResponse(response: String) {
+        // For now, just log the response and show a toast
+        // We'll implement proper handling after seeing the API response format
+        android.util.Log.d("AiMasterResponse", response)
+
+        try {
+            // Try to parse basic info from response
+            if (response.isNotEmpty()) {
+                // Show response in a simple dialog for now
+                android.app.AlertDialog.Builder(this)
+                    .setTitle("AI Master Response")
+                    .setMessage("Response received! Check logs for details.\n\nResponse length: ${response.length} characters")
+                    .setPositiveButton("OK") { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                    .setNeutralButton("View Raw") { dialog, _ ->
+                        showRawResponseDialog(response)
+                        dialog.dismiss()
+                    }
+                    .show()
+            } else {
+                Toast.makeText(this, "Empty response received", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("WhiteboardActivity", "Error handling AI response", e)
+            Toast.makeText(this, "Error processing AI response: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun showRawResponseDialog(response: String) {
+        val scrollView = android.widget.ScrollView(this)
+        val textView = android.widget.TextView(this).apply {
+            text = response
+            setPadding(16, 16, 16, 16)
+            textSize = 12f
+            setTextIsSelectable(true)
+        }
+        scrollView.addView(textView)
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Raw API Response")
+            .setView(scrollView)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun toggleCameraFeed() {
@@ -569,6 +633,7 @@ class WhiteboardActivity : AppCompatActivity() {
         cameraExecutor.shutdown()
         pauseAll3DRenderingForDrawing()
         modelBrowserDrawer?.dismiss()
+        aiMasterDrawer?.dismiss()
     }
 
     // Handle annotation mode and camera in back press
