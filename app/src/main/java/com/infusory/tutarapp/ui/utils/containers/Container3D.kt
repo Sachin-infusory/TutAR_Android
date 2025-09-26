@@ -218,25 +218,30 @@ class Container3D @JvmOverloads constructor(
         }
     }
 
+
+
     private fun createSideControlButton(iconRes: Int, tooltip: String, onClick: () -> Unit): ImageView {
         return ImageView(context).apply {
             layoutParams = LinearLayout.LayoutParams(dpToPx(32), dpToPx(32)).apply {
                 setMargins(dpToPx(4), dpToPx(4), dpToPx(4), dpToPx(4))
             }
             setImageResource(iconRes)
+
+            // Make background fully transparent with no stroke
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.parseColor("#E0FFFFFF"))
-                setStroke(2, Color.parseColor("#CCCCCC"))
+                setColor(Color.TRANSPARENT) // Fully transparent background
+                setStroke(0, Color.TRANSPARENT) // No border
             }
+
             scaleType = ImageView.ScaleType.CENTER
             elevation = 4f
-            alpha = 0.9f
+            alpha = 1.0f // Fully visible icon (adjust if you want semi-transparent)
             contentDescription = tooltip
 
             setOnClickListener { onClick() }
 
-            // Add touch feedback
+            // Touch feedback
             setOnTouchListener { view, event ->
                 when (event.action) {
                     android.view.MotionEvent.ACTION_DOWN -> {
@@ -245,7 +250,7 @@ class Container3D @JvmOverloads constructor(
                         scaleY = 0.95f
                     }
                     android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
-                        alpha = 0.9f
+                        alpha = 1.0f
                         scaleX = 1.0f
                         scaleY = 1.0f
                     }
@@ -302,7 +307,6 @@ class Container3D @JvmOverloads constructor(
             android.util.Log.e("Container3D", "Failed to initialize 3D view", e)
         }
     }
-
 
     private fun configureViewerForTransparency() {
         modelViewer?.view?.apply {
@@ -370,7 +374,6 @@ class Container3D @JvmOverloads constructor(
             }
         }
     }
-
 
 
 //    private fun addTouchModeToggleButton() {

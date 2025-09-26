@@ -147,13 +147,24 @@ class WhiteboardActivity : AppCompatActivity() {
             annotationTool?.toggleAnnotationMode()
         }
 
+        // FIRST RIGHT BUTTON - Toggle annotation mode (btn_draw_rt)
+        findViewById<android.widget.ImageButton>(R.id.btn_draw_rt).setOnClickListener {
+            annotationTool?.toggleAnnotationMode()
+        }
+
         // AR/Camera Button - Toggle camera feed (btn_ar)
         findViewById<android.widget.ImageButton>(R.id.btn_ar).setOnClickListener {
             toggleCameraFeed()
         }
 
+        // AR/Camera Button - Toggle camera feed (btn_ar_rt)
+        findViewById<android.widget.ImageButton>(R.id.btn_ar_rt).setOnClickListener {
+            toggleCameraFeed()
+        }
+
+
         // Left side button - Show add container menu (UPDATED to handle annotation mode)
-        findViewById<android.widget.ImageButton>(R.id.btn_add).setOnClickListener {
+        findViewById<android.widget.ImageButton>(R.id.btn_insert).setOnClickListener {
             if (annotationTool?.isInAnnotationMode() == true) {
                 showAnnotationMenu()
             } else {
@@ -162,8 +173,9 @@ class WhiteboardActivity : AppCompatActivity() {
         }
 
         // Right side button - Show model browser for 3D models
-        findViewById<android.widget.ImageButton>(R.id.btn_add_rt).setOnClickListener {
-            showModelBrowser()
+        findViewById<android.widget.ImageButton>(R.id.btn_insert_rt).setOnClickListener {
+        showAddContainerMenu()
+//            showModelBrowser()
         }
 
         // Menu buttons - Left menu shows model browser
@@ -172,7 +184,8 @@ class WhiteboardActivity : AppCompatActivity() {
         }
 
         findViewById<android.widget.ImageButton>(R.id.btn_menu_rt).setOnClickListener {
-            showContainerManagementMenu()
+//            showContainerManagementMenu()
+            showModelBrowser()
         }
     }
 

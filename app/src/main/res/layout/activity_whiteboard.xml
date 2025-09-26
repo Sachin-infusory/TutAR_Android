@@ -60,7 +60,7 @@
         android:elevation="250dp"
         android:orientation="vertical">
 
-        <!-- Flash Button -->
+        <!-- Draw Button -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -72,7 +72,7 @@
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/circular_button_background"
-                android:src="@drawable/ic_flash"
+                android:src="@drawable/ic_draw"
                 android:scaleType="centerInside"
                 android:padding="6dp"
                 android:elevation="260dp"
@@ -81,13 +81,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Flash"
+                android:text="Draw"
                 android:textColor="#FFFFFF"
                 android:textSize="8sp"
                 android:gravity="center" />
         </LinearLayout>
 
-        <!-- Timer Button -->
+        <!-- AR Button -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -99,7 +99,7 @@
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/circular_button_background"
-                android:src="@drawable/ic_timer"
+                android:src="@drawable/ic_ar"
                 android:scaleType="centerInside"
                 android:padding="6dp"
                 android:elevation="260dp"
@@ -108,13 +108,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Timer"
+                android:text="AR"
                 android:textColor="#FFFFFF"
                 android:textSize="8sp"
                 android:gravity="center" />
         </LinearLayout>
 
-        <!-- Grid Button -->
+        <!-- Color Plate Button -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -122,11 +122,11 @@
             android:gravity="center"
             android:layout_marginBottom="12dp">
             <ImageButton
-                android:id="@+id/btn_grid"
+                android:id="@+id/color_plate"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/circular_button_background"
-                android:src="@drawable/ic_flash"
+                android:src="@drawable/ic_color_plate"
                 android:scaleType="centerInside"
                 android:padding="6dp"
                 android:elevation="260dp"
@@ -135,13 +135,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Grid"
+                android:text="Color"
                 android:textColor="#FFFFFF"
                 android:textSize="8sp"
                 android:gravity="center" />
         </LinearLayout>
 
-        <!-- Effects Button -->
+        <!-- Load Lessons Button -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -149,11 +149,11 @@
             android:gravity="center"
             android:layout_marginBottom="12dp">
             <ImageButton
-                android:id="@+id/btn_effects"
+                android:id="@+id/btn_load_lesson"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/circular_button_background"
-                android:src="@drawable/ic_flash"
+                android:src="@drawable/ic_load_lesson"
                 android:scaleType="centerInside"
                 android:padding="6dp"
                 android:elevation="260dp"
@@ -162,126 +162,19 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Effects"
+                android:text="Lessons"
                 android:textColor="#FFFFFF"
                 android:textSize="8sp"
                 android:gravity="center" />
         </LinearLayout>
 
-        <!-- Person Button -->
+        <!-- 3d Menu Buttons -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="center"
             android:layout_marginBottom="12dp">
-            <ImageButton
-                android:id="@+id/btn_person"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="@drawable/circular_button_background"
-                android:src="@drawable/ic_flash"
-                android:scaleType="centerInside"
-                android:padding="6dp"
-                android:elevation="260dp"
-                app:tint="#000000" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Person"
-                android:textColor="#FFFFFF"
-                android:textSize="8sp"
-                android:gravity="center" />
-        </LinearLayout>
-
-        <!-- Settings Button -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:layout_marginBottom="12dp">
-            <ImageButton
-                android:id="@+id/btn_settings"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="@drawable/circular_button_background"
-                android:src="@drawable/ic_flash"
-                android:scaleType="centerInside"
-                android:padding="6dp"
-                android:elevation="260dp"
-                app:tint="#000000" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Settings"
-                android:textColor="#FFFFFF"
-                android:textSize="8sp"
-                android:gravity="center" />
-        </LinearLayout>
-
-        <!-- Download Button -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:layout_marginBottom="12dp">
-            <ImageButton
-                android:id="@+id/btn_download"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="@drawable/circular_button_background"
-                android:src="@drawable/ic_flash"
-                android:scaleType="centerInside"
-                android:padding="6dp"
-                android:elevation="260dp"
-                app:tint="#000000" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Download"
-                android:textColor="#FFFFFF"
-                android:textSize="8sp"
-                android:gravity="center" />
-        </LinearLayout>
-
-        <!-- Add Button -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:layout_marginBottom="12dp">
-            <ImageButton
-                android:id="@+id/btn_add"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="@drawable/circular_button_background"
-                android:src="@drawable/ic_flash"
-                android:scaleType="centerInside"
-                android:padding="6dp"
-                android:elevation="260dp"
-                app:tint="#000000" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Add"
-                android:textColor="#FFFFFF"
-                android:textSize="8sp"
-                android:gravity="center" />
-        </LinearLayout>
-
-        <!-- Menu Button -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center">
             <ImageButton
                 android:id="@+id/btn_menu"
                 android:layout_width="36dp"
@@ -296,7 +189,114 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Menu"
+                android:text="Model"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <!-- Save Button -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginBottom="12dp">
+            <ImageButton
+                android:id="@+id/btn_save"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/circular_button_background"
+                android:src="@drawable/ic_save"
+                android:scaleType="centerInside"
+                android:padding="6dp"
+                android:elevation="260dp"
+                app:tint="#000000" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Save"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <!-- Insert Button -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginBottom="12dp">
+            <ImageButton
+                android:id="@+id/btn_insert"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/circular_button_background"
+                android:src="@drawable/ic_insert"
+                android:scaleType="centerInside"
+                android:padding="6dp"
+                android:elevation="260dp"
+                app:tint="#000000" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Insert"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <!-- Settings Button -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginBottom="12dp">
+            <ImageButton
+                android:id="@+id/btn_setting"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/circular_button_background"
+                android:src="@drawable/ic_settings"
+                android:scaleType="centerInside"
+                android:padding="6dp"
+                android:elevation="260dp"
+                app:tint="#000000" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Settings"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <!-- More Button -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+            <ImageButton
+                android:id="@+id/btn_more"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/circular_button_background"
+                android:src="@drawable/ic_more"
+                android:scaleType="centerInside"
+                android:padding="6dp"
+                android:elevation="260dp"
+                app:tint="#000000" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="More"
                 android:textColor="#FFFFFF"
                 android:textSize="8sp"
                 android:gravity="center" />
@@ -318,7 +318,7 @@
         <!-- All right buttons with same structure as left but with 260dp elevation -->
         <!-- ... (keeping all your existing right buttons but adding elevation="260dp" to each ImageButton) -->
 
-        <!-- Flash Button -->
+        <!-- Draw Button -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -326,11 +326,11 @@
             android:gravity="center"
             android:layout_marginBottom="12dp">
             <ImageButton
-                android:id="@+id/btn_flash_rt"
+                android:id="@+id/btn_draw_rt"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/circular_button_background"
-                android:src="@drawable/ic_flash"
+                android:src="@drawable/ic_draw"
                 android:scaleType="centerInside"
                 android:padding="6dp"
                 android:elevation="260dp"
@@ -339,13 +339,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Flash"
+                android:text="Draw"
                 android:textColor="#FFFFFF"
                 android:textSize="8sp"
                 android:gravity="center" />
         </LinearLayout>
 
-        <!-- Add Button -->
+        <!-- AR Button -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -353,11 +353,11 @@
             android:gravity="center"
             android:layout_marginBottom="12dp">
             <ImageButton
-                android:id="@+id/btn_add_rt"
+                android:id="@+id/btn_ar_rt"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:background="@drawable/circular_button_background"
-                android:src="@drawable/ic_flash"
+                android:src="@drawable/ic_ar"
                 android:scaleType="centerInside"
                 android:padding="6dp"
                 android:elevation="260dp"
@@ -366,18 +366,73 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Add"
+                android:text="AR"
                 android:textColor="#FFFFFF"
                 android:textSize="8sp"
                 android:gravity="center" />
         </LinearLayout>
 
-        <!-- Menu Button -->
+        <!-- Color Plate Button -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center">
+            android:gravity="center"
+            android:layout_marginBottom="12dp">
+            <ImageButton
+                android:id="@+id/color_plate_rt"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/circular_button_background"
+                android:src="@drawable/ic_color_plate"
+                android:scaleType="centerInside"
+                android:padding="6dp"
+                android:elevation="260dp"
+                app:tint="#000000" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Color"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <!-- Load Lessons Button -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginBottom="12dp">
+            <ImageButton
+                android:id="@+id/btn_load_lesson_rt"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/circular_button_background"
+                android:src="@drawable/ic_load_lesson"
+                android:scaleType="centerInside"
+                android:padding="6dp"
+                android:elevation="260dp"
+                app:tint="#000000" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Lessons"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <!-- 3d Menu Buttons -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginBottom="12dp">
             <ImageButton
                 android:id="@+id/btn_menu_rt"
                 android:layout_width="36dp"
@@ -392,11 +447,198 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Menu"
+                android:text="Model"
                 android:textColor="#FFFFFF"
                 android:textSize="8sp"
                 android:gravity="center" />
         </LinearLayout>
+
+        <!-- Save Button -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginBottom="12dp">
+            <ImageButton
+                android:id="@+id/btn_save_rt"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/circular_button_background"
+                android:src="@drawable/ic_save"
+                android:scaleType="centerInside"
+                android:padding="6dp"
+                android:elevation="260dp"
+                app:tint="#000000" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Save"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <!-- Insert Button -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginBottom="12dp">
+            <ImageButton
+                android:id="@+id/btn_insert_rt"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/circular_button_background"
+                android:src="@drawable/ic_insert"
+                android:scaleType="centerInside"
+                android:padding="6dp"
+                android:elevation="260dp"
+                app:tint="#000000" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Insert"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <!-- Settings Button -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginBottom="12dp">
+            <ImageButton
+                android:id="@+id/btn_setting_rt"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/circular_button_background"
+                android:src="@drawable/ic_settings"
+                android:scaleType="centerInside"
+                android:padding="6dp"
+                android:elevation="260dp"
+                app:tint="#000000" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Settings"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <!-- More Button -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+            <ImageButton
+                android:id="@+id/btn_more_rt"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/circular_button_background"
+                android:src="@drawable/ic_more"
+                android:scaleType="centerInside"
+                android:padding="6dp"
+                android:elevation="260dp"
+                app:tint="#000000" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="More"
+                android:textColor="#FFFFFF"
+                android:textSize="8sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <!-- Flash Button -->
+<!--        <LinearLayout-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="vertical"-->
+<!--            android:gravity="center"-->
+<!--            android:layout_marginBottom="12dp">-->
+<!--            <ImageButton-->
+<!--                android:id="@+id/btn_flash_rt"-->
+<!--                android:layout_width="36dp"-->
+<!--                android:layout_height="36dp"-->
+<!--                android:background="@drawable/circular_button_background"-->
+<!--                android:src="@drawable/ic_flash"-->
+<!--                android:scaleType="centerInside"-->
+<!--                android:padding="6dp"-->
+<!--                android:elevation="260dp"-->
+<!--                app:tint="#000000" />-->
+<!--            <TextView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginTop="2dp"-->
+<!--                android:text="Flash"-->
+<!--                android:textColor="#FFFFFF"-->
+<!--                android:textSize="8sp"-->
+<!--                android:gravity="center" />-->
+<!--        </LinearLayout>-->
+
+        <!-- Add Button -->
+<!--        <LinearLayout-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="vertical"-->
+<!--            android:gravity="center"-->
+<!--            android:layout_marginBottom="12dp">-->
+<!--            <ImageButton-->
+<!--                android:id="@+id/btn_add_rt"-->
+<!--                android:layout_width="36dp"-->
+<!--                android:layout_height="36dp"-->
+<!--                android:background="@drawable/circular_button_background"-->
+<!--                android:src="@drawable/ic_flash"-->
+<!--                android:scaleType="centerInside"-->
+<!--                android:padding="6dp"-->
+<!--                android:elevation="260dp"-->
+<!--                app:tint="#000000" />-->
+<!--            <TextView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginTop="2dp"-->
+<!--                android:text="Add"-->
+<!--                android:textColor="#FFFFFF"-->
+<!--                android:textSize="8sp"-->
+<!--                android:gravity="center" />-->
+<!--        </LinearLayout>-->
+
+        <!-- Menu Button -->
+<!--        <LinearLayout-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="vertical"-->
+<!--            android:gravity="center">-->
+<!--            <ImageButton-->
+<!--                android:id="@+id/btn_menu_rt"-->
+<!--                android:layout_width="36dp"-->
+<!--                android:layout_height="36dp"-->
+<!--                android:background="@drawable/circular_button_background"-->
+<!--                android:src="@drawable/ic_flash"-->
+<!--                android:scaleType="centerInside"-->
+<!--                android:padding="6dp"-->
+<!--                android:elevation="260dp"-->
+<!--                app:tint="#000000" />-->
+<!--            <TextView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginTop="2dp"-->
+<!--                android:text="Menu"-->
+<!--                android:textColor="#FFFFFF"-->
+<!--                android:textSize="8sp"-->
+<!--                android:gravity="center" />-->
+<!--        </LinearLayout>-->
 
     </LinearLayout>
 
