@@ -35,6 +35,13 @@ class ContainerImage @JvmOverloads constructor(
         setupImageContainer()
     }
 
+    fun setImage(bitmap: Bitmap, path: String) {
+        currentImageView?.setImageBitmap(bitmap)
+        setImagePath(path)
+        updateImageView()
+    }
+
+
     private fun setupImageContainer() {
 //        clearControlButtons()
 

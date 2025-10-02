@@ -1,9 +1,13 @@
 // WhiteboardActivity.kt - Updated with AI Master Integration
 package com.infusory.tutarapp.ui.whiteboard
-
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.provider.MediaStore
+import android.util.Log
+import android.view.Gravity
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -20,6 +24,23 @@ import com.infusory.tutarapp.ui.utils.containers.ContainerManager
 import com.infusory.tutarapp.ui.ai.AiMasterDrawer
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import android.widget.ImageButton
+import android.view.View
+import android.widget.Button
+import android.widget.PopupWindow
+import android.widget.LinearLayout
+import android.widget.RadioButton
+import android.widget.RelativeLayout
+import com.infusory.tutarapp.ui.containers.ContainerImage
+
+enum class ActionType {
+    SAVE, INSERT
+}
+enum class ImageMode {
+    BACKGROUND,
+    INSERT
+}
+
 
 class WhiteboardActivity : AppCompatActivity() {
 
@@ -41,9 +62,75 @@ class WhiteboardActivity : AppCompatActivity() {
     private var isCameraActive = false
 
     // Camera permission request code
-    private val CAMERA_PERMISSION_REQUEST_CODE = 100
+    private val BACKGROUND_PICK_CODE = 101
+    private val CONTAINER_IMAGE_PICK_CODE = 102
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+
+    // Active buttons
+    private lateinit var allButtons: List<ImageButton>
+    private val pairedButtonsState = mutableMapOf<Int, Boolean>()
+
+    private val IMAGE_PICK_CODE = 101
+
+    // more button functionalities
+    private fun openImagePicker() {
+        val intent = Intent(Intent.ACTION_PICK).apply {
+            type = "image/*"
+        }
+        startActivityForResult(intent, IMAGE_PICK_CODE)
+    }
+
+//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+//        super.onActivityResult(requestCode, resultCode, data)
+//
+//        if (requestCode == IMAGE_PICK_CODE && resultCode == RESULT_OK) {
+//            val imageUri = data?.data ?: return
+//            try {
+//                val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
+//                val drawable = BitmapDrawable(resources, bitmap)
+//                surfaceView.background = drawable
+//            } catch (e: Exception) {
+//                Toast.makeText(this, "Failed to set background: ${e.message}", Toast.LENGTH_SHORT)
+//                    .show()
+//            }
+//        }
+//    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (resultCode != RESULT_OK || data?.data == null) return
+        val imageUri = data.data!!
+
+        when (requestCode) {
+            IMAGE_PICK_CODE -> {
+                // For background
+                try {
+                    val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
+                    val drawable = BitmapDrawable(resources, bitmap)
+                    surfaceView.background = drawable
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Failed to set background: ${e.message}", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            }
+
+            CONTAINER_IMAGE_PICK_CODE -> {
+                try {
+                    val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
+                    // Get the inserted ContainerImage
+                    val container = mainLayout.findViewWithTag<View>("lesson_image") as? ContainerImage
+                    container?.setImage(bitmap, imageUri.toString())
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Failed to load image into container: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+
+    override
+    fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_whiteboard)
 
@@ -118,6 +205,12 @@ class WhiteboardActivity : AppCompatActivity() {
         }
     }
 
+    fun pickBackgroundImage() {
+        val intent = Intent(Intent.ACTION_PICK).apply { type = "image/*" }
+        startActivityForResult(intent, BACKGROUND_PICK_CODE)
+    }
+
+
     private fun setupContainerManager() {
         containerManager = ContainerManager(this, mainLayout, maxContainers = 8)
 
@@ -138,6 +231,186 @@ class WhiteboardActivity : AppCompatActivity() {
         }
     }
 
+    // bgColor selector popup container
+    private fun showColorPopup(anchor: ImageButton) {
+        Log.i("colorPopup", "colorPopupAnchor: ${anchor.tag}")
+        val inflater = layoutInflater
+        val colorView = inflater.inflate(R.layout.dialog_color_picker, null)
+
+        val popup = PopupWindow(
+            colorView,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            true
+        ).apply {
+            elevation = 20f
+            isOutsideTouchable = true
+        }
+
+        // Bind buttons
+        val white = colorView.findViewById<RadioButton>(R.id.colorWhite)
+        val green = colorView.findViewById<RadioButton>(R.id.colorGreen)
+        val black = colorView.findViewById<RadioButton>(R.id.colorBlack)
+        val split = colorView.findViewById<RadioButton>(R.id.colorSplit)
+        val pickImage = colorView.findViewById<ImageButton>(R.id.btnPickImage)
+
+        // ✅ Set background color actions
+        white.setOnClickListener {
+            surfaceView.setBackgroundColor(ContextCompat.getColor(this, android.R.color.white))
+            popup.dismiss()
+        }
+        green.setOnClickListener {
+            surfaceView.setBackgroundColor(
+                ContextCompat.getColor(
+                    this,
+                    android.R.color.holo_green_light
+                )
+            )
+            popup.dismiss()
+        }
+        black.setOnClickListener {
+            surfaceView.setBackgroundColor(ContextCompat.getColor(this, android.R.color.black))
+            popup.dismiss()
+        }
+//        split.setOnClickListener {
+//            surfaceView.background = ContextCompat.getDrawable(this, R.drawable.bg_color_split_drawable)
+//            popup.dismiss()
+//        }
+
+        // ✅ Image picker
+        pickImage.setOnClickListener {
+            popup.dismiss()
+            openImagePicker()
+        }
+
+        // Position popup near the anchor
+        colorView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+        val popupWidth = colorView.measuredWidth
+        val popupHeight = colorView.measuredHeight
+
+        val location = IntArray(2)
+        anchor.getLocationOnScreen(location)
+        val anchorX = location[0]
+        val anchorY = location[1]
+        val anchorWidth = anchor.width
+        val anchorHeight = anchor.height
+
+        var popupX = anchorX + anchorWidth + 30
+        val popupY = anchorY + (anchorHeight - popupHeight) / 2
+
+        if (popupX + popupWidth > resources.displayMetrics.widthPixels) {
+            popupX = anchorX - popupWidth - 30
+        }
+
+        popup.showAtLocation(anchor, Gravity.NO_GRAVITY, popupX, popupY)
+
+        popup.setOnDismissListener {
+            anchor.tag = false
+            anchor.background =
+                ContextCompat.getDrawable(this, R.drawable.circular_button_background)
+        }
+    }
+
+    // save options(lesson or pdf save) popup container
+    private fun showActionOptionsPopup(anchor: View, type: ActionType) {
+        Log.i("ActionPopup", "Anchor: ${anchor.tag}, Type: $type")
+
+        val inflater = layoutInflater
+
+        // Choose layout dynamically
+        val popupView = when (type) {
+            ActionType.SAVE -> inflater.inflate(R.layout.dialog_save_options, null)
+            ActionType.INSERT -> inflater.inflate(R.layout.dialog_insert_options, null)
+        }
+
+        // Bind buttons dynamically
+        when (type) {
+            ActionType.SAVE -> {
+                popupView.findViewById<Button>(R.id.btnSaveLesson).setOnClickListener {
+                    Toast.makeText(this, "Save Lesson clicked", Toast.LENGTH_SHORT).show()
+                }
+                popupView.findViewById<Button>(R.id.btnSavePdf).setOnClickListener {
+                    Toast.makeText(this, "Save PDF clicked", Toast.LENGTH_SHORT).show()
+                }
+            }
+            ActionType.INSERT -> {
+                popupView.findViewById<Button>(R.id.btnInsertImage).setOnClickListener {
+                    val parent = mainLayout  // Use already initialized mainLayout
+
+                    // Check if a ContainerImage is already added by tag
+                    val existing = parent.findViewWithTag<View>("lesson_image") as? ContainerImage
+                    existing?.let { parent.removeView(it) }
+
+                    // Create a new ContainerImage
+                    val imageContainer = ContainerImage(this@WhiteboardActivity).apply {
+                        tag = "lesson_image"  // Tag for later reference
+                        layoutParams = RelativeLayout.LayoutParams(
+                            RelativeLayout.LayoutParams.WRAP_CONTENT,
+                            RelativeLayout.LayoutParams.WRAP_CONTENT
+                        )
+                        // Optional: set default placeholder image
+                        setImageResource(R.drawable.tutar_logo)
+                    }
+
+                    // Add container to layout
+                    parent.addView(imageContainer)
+                    imageContainer.initializeContent()
+
+                    // Launch image picker
+                    val intent = Intent(Intent.ACTION_PICK).apply { }
+                    startActivityForResult(intent, CONTAINER_IMAGE_PICK_CODE)
+
+//                    popup.dismiss()
+                }
+
+                popupView.findViewById<Button>(R.id.btnInsertPdf).setOnClickListener {
+                    Toast.makeText(this, "Insert PDF clicked", Toast.LENGTH_SHORT).show()
+                }
+                popupView.findViewById<Button>(R.id.btnInsertYoutube).setOnClickListener {
+                    Toast.makeText(this, "Insert YouTube clicked", Toast.LENGTH_SHORT).show()
+                }
+                popupView.findViewById<Button>(R.id.btnInsertWebsite).setOnClickListener {
+                    Toast.makeText(this, "Insert Website clicked", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        // Create popup
+        val popup = PopupWindow(
+            popupView,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            false
+        ).apply {
+            elevation = 20f
+            isOutsideTouchable = true
+        }
+
+        // Measure & position
+        popupView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+        val popupWidth = popupView.measuredWidth
+        val popupHeight = popupView.measuredHeight
+
+        val location = IntArray(2)
+        anchor.getLocationOnScreen(location)
+        var popupX = location[0] + anchor.width + 30
+        var popupY = location[1]
+
+        if (popupX + popupWidth > resources.displayMetrics.widthPixels) {
+            popupX = location[0] - popupWidth - 30
+        }
+        if (popupY + popupHeight > resources.displayMetrics.heightPixels) {
+            popupY = resources.displayMetrics.heightPixels - popupHeight - 10
+        }
+        if (popupY < 0) popupY = 10
+
+        popup.showAtLocation(anchor, Gravity.NO_GRAVITY, popupX, popupY)
+
+        popup.setOnDismissListener {
+            anchor.background = ContextCompat.getDrawable(this, R.drawable.circular_button_background)
+        }
+    }
+
     private fun setupModelBrowser() {
         modelBrowserDrawer = ModelBrowserDrawer(this) { modelData, fullPath ->
             createCustom3DContainer(modelData, fullPath)
@@ -150,56 +423,204 @@ class WhiteboardActivity : AppCompatActivity() {
         }
     }
 
+    private fun setClickListener(vararg ids: Int, onClick: (Boolean) -> Unit) {
+        // Buttons handled individually
+        val individualButtons = listOf(
+            R.id.color_plate, R.id.color_plate_rt,
+            R.id.btn_save, R.id.btn_save_rt,
+            R.id.btn_insert, R.id.btn_insert_rt,
+            R.id.btn_more, R.id.btn_more_rt
+        )
+
+        ids.forEach { id ->
+            val btn = findViewById<ImageButton>(id) ?: return@forEach
+
+            btn.setOnClickListener {
+                if (individualButtons.contains(id)) {
+                    // Toggle only this button
+                    val isActive = btn.tag as? Boolean ?: false
+                    val newState = !isActive
+                    btn.tag = newState
+
+                    if (newState) {
+                        // Active state: set blue background
+                        btn.background =
+                            ContextCompat.getDrawable(this, R.drawable.circular_button_background)
+                                ?.apply {
+                                    setTint(
+                                        ContextCompat.getColor(
+                                            this@WhiteboardActivity,
+                                            android.R.color.holo_blue_light
+                                        )
+                                    )
+                                }
+                    } else {
+                        // Inactive: reset to default drawable
+                        btn.background =
+                            ContextCompat.getDrawable(this, R.drawable.circular_button_background)
+                    }
+
+                    onClick(newState)
+
+                } else {
+                    // Paired buttons logic
+                    val pairedId = when (id) {
+                        R.id.btn_draw -> R.id.btn_draw_rt
+                        R.id.btn_draw_rt -> R.id.btn_draw
+                        R.id.btn_ar -> R.id.btn_ar_rt
+                        R.id.btn_ar_rt -> R.id.btn_ar
+                        R.id.btn_menu -> R.id.btn_menu_rt
+                        R.id.btn_menu_rt -> R.id.btn_menu
+                        R.id.btn_settings -> R.id.btn_setting_rt
+                        R.id.btn_settings_rt -> R.id.btn_setting
+                        else -> null
+                    }
+
+                    val currentState = pairedButtonsState[pairedId ?: id] ?: false
+                    val newState = !currentState
+
+                    pairedButtonsState[id] = newState
+                    pairedId?.let { pairedButtonsState[it] = newState }
+
+                    val drawable = if (newState) {
+                        ContextCompat.getDrawable(this, R.drawable.circular_button_background)
+                            ?.apply {
+                                setTint(
+                                    ContextCompat.getColor(
+                                        this@WhiteboardActivity,
+                                        android.R.color.holo_blue_light
+                                    )
+                                )
+                            }
+                    } else {
+                        ContextCompat.getDrawable(this, R.drawable.circular_button_background)
+                    }
+
+                    btn.background = drawable
+                    pairedId?.let { findViewById<ImageButton>(it)?.background = drawable }
+
+                    onClick(newState)
+                }
+            }
+        }
+    }
+
+    // Setup all buttons with proper toggle behavior
     private fun setupButtonListeners() {
-        // FIRST LEFT BUTTON - Toggle annotation mode (btn_draw)
-        findViewById<android.widget.ImageButton>(R.id.btn_draw).setOnClickListener {
-            annotationTool?.toggleAnnotationMode()
+        allButtons = listOfNotNull(
+            findViewById(R.id.btn_draw),
+            findViewById(R.id.btn_draw_rt),
+            findViewById(R.id.btn_ar),
+            findViewById(R.id.btn_ar_rt),
+            findViewById(R.id.color_plate),
+            findViewById(R.id.color_plate_rt),
+            findViewById(R.id.btn_load_lesson),
+            findViewById(R.id.btn_load_lesson_rt),
+            findViewById(R.id.btn_menu),
+            findViewById(R.id.btn_menu_rt),
+            findViewById(R.id.btn_save),
+            findViewById(R.id.btn_save_rt),
+            findViewById(R.id.btn_insert),
+            findViewById(R.id.btn_insert_rt),
+            findViewById(R.id.btn_setting),
+            findViewById(R.id.btn_setting_rt),
+            findViewById(R.id.btn_more),
+            findViewById(R.id.btn_more_rt),
+            findViewById(R.id.ai_master_btn),
+        )
+
+        // For Draw buttons (left + right)
+        setClickListener(R.id.btn_draw, R.id.btn_draw_rt) { isActive ->
+            if (isActive) annotationTool?.toggleAnnotationMode()
+            else annotationTool?.toggleAnnotationMode(false)
         }
 
-        // FIRST RIGHT BUTTON - Toggle annotation mode (btn_draw_rt)
-        findViewById<android.widget.ImageButton>(R.id.btn_draw_rt).setOnClickListener {
-            annotationTool?.toggleAnnotationMode()
+        // For AR buttons
+        setClickListener(R.id.btn_ar, R.id.btn_ar_rt) { isActive ->
+            if (isActive) toggleCameraFeed()
+            else toggleCameraFeed()
         }
 
-        // AR/Camera Button - Toggle camera feed (btn_ar)
-        findViewById<android.widget.ImageButton>(R.id.btn_ar).setOnClickListener {
-            toggleCameraFeed()
+        // For color picker buttons
+        setClickListener(R.id.color_plate) { isActive ->
+            showColorPopup(findViewById(R.id.color_plate) as ImageButton)
+        }
+        setClickListener(R.id.color_plate_rt) { isActive ->
+            showColorPopup(findViewById(R.id.color_plate_rt) as ImageButton)
         }
 
-        // AR/Camera Button - Toggle camera feed (btn_ar_rt)
-        findViewById<android.widget.ImageButton>(R.id.btn_ar_rt).setOnClickListener {
-            toggleCameraFeed()
+        // For Load(lesson or pdf) buttons
+        setClickListener(R.id.btn_load_lesson) { isActive ->
+
+        }
+
+        setClickListener(R.id.btn_load_lesson_rt) { isActive ->
+
         }
 
 
-        // Left side button - Show add container menu (UPDATED to handle annotation mode)
-        findViewById<android.widget.ImageButton>(R.id.btn_insert).setOnClickListener {
-            if (annotationTool?.isInAnnotationMode() == true) {
-                showAnnotationMenu()
+        // Menu(3d models) buttons
+        setClickListener(R.id.btn_menu, R.id.btn_menu_rt) { isActive ->
+            if (isActive) {
+                showModelBrowser()
+                annotationTool?.toggleAnnotationMode(false)
+
+                // 🔹 Force deactivate Draw buttons when Model Browser opens
+                val drawButtons = listOf(
+                    findViewById<ImageButton>(R.id.btn_draw),
+                    findViewById<ImageButton>(R.id.btn_draw_rt)
+                )
+
+                drawButtons.forEach { btn ->
+                    btn?.tag = false
+                    btn?.background = ContextCompat.getDrawable(
+                        this,
+                        R.drawable.circular_button_background
+                    )
+                }
+
+                // Update pairedButtonsState so it stays in sync
+                pairedButtonsState[R.id.btn_draw] = false
+                pairedButtonsState[R.id.btn_draw_rt] = false
+
             } else {
-                showAddContainerMenu()
+                showModelBrowser()
             }
         }
 
-        // Right side button - Show model browser for 3D models
-        findViewById<android.widget.ImageButton>(R.id.btn_insert_rt).setOnClickListener {
-        showAddContainerMenu()
-//            showModelBrowser()
+        // For Save Button
+        setClickListener(R.id.btn_save) { isActive ->
+            if (isActive) showActionOptionsPopup(findViewById(R.id.btn_save), ActionType.SAVE)
+        }
+        setClickListener(R.id.btn_save_rt) { isActive ->
+            if (isActive) showActionOptionsPopup(findViewById(R.id.btn_save_rt), ActionType.SAVE)
         }
 
-        // Menu buttons - Left menu shows model browser
-        findViewById<android.widget.ImageButton>(R.id.btn_menu).setOnClickListener {
-            showModelBrowser()
+        // For Insert Button
+        setClickListener(R.id.btn_insert) { isActive ->
+            if (isActive) {
+                showActionOptionsPopup(findViewById(R.id.btn_insert), ActionType.INSERT)
+            }
+        }
+        setClickListener(R.id.btn_insert_rt) { isActive ->
+            if (isActive) showActionOptionsPopup(findViewById(R.id.btn_insert_rt), ActionType.INSERT)
         }
 
-        findViewById<android.widget.ImageButton>(R.id.btn_menu_rt).setOnClickListener {
-//            showContainerManagementMenu()
-            showModelBrowser()
+
+        // For Settings Button
+        setClickListener(R.id.btn_setting, R.id.btn_setting_rt) { isActive ->
         }
 
-        // AI Master Button - Show AI Master drawer
-        findViewById<android.widget.ImageButton>(R.id.ai_master_btn).setOnClickListener {
-            showAiMaster()
+        // For More Button
+        setClickListener(R.id.btn_more) { isActive ->
+        }
+        setClickListener(R.id.btn_more_rt) { isActive ->
+        }
+
+        // AI Master
+        setClickListener(R.id.ai_master_btn) { isActive ->
+            if (isActive) showAiMaster()
+            else showAiMaster()
         }
     }
 
@@ -232,7 +653,8 @@ class WhiteboardActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             android.util.Log.e("WhiteboardActivity", "Error handling AI response", e)
-            Toast.makeText(this, "Error processing AI response: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Error processing AI response: ${e.message}", Toast.LENGTH_LONG)
+                .show()
         }
     }
 
@@ -276,7 +698,7 @@ class WhiteboardActivity : AppCompatActivity() {
         ActivityCompat.requestPermissions(
             this,
             arrayOf(Manifest.permission.CAMERA),
-            CAMERA_PERMISSION_REQUEST_CODE
+            BACKGROUND_PICK_CODE
         )
     }
 
@@ -288,7 +710,7 @@ class WhiteboardActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         when (requestCode) {
-            CAMERA_PERMISSION_REQUEST_CODE -> {
+            BACKGROUND_PICK_CODE -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     startCamera()
                 } else {
@@ -333,14 +755,23 @@ class WhiteboardActivity : AppCompatActivity() {
                     surfaceView.visibility = android.view.View.GONE
 
                     isCameraActive = true
-                    Toast.makeText(this, "Camera activated - AR mode enabled", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Camera activated - AR mode enabled", Toast.LENGTH_SHORT)
+                        .show()
 
                 } catch (exc: Exception) {
-                    Toast.makeText(this, "Failed to start camera: ${exc.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this,
+                        "Failed to start camera: ${exc.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
 
             } catch (exc: Exception) {
-                Toast.makeText(this, "Camera initialization failed: ${exc.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this,
+                    "Camera initialization failed: ${exc.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -363,53 +794,8 @@ class WhiteboardActivity : AppCompatActivity() {
         }
     }
 
-    // Show annotation controls menu
-    private fun showAnnotationMenu() {
-        val options = arrayOf(
-            "Clear All Annotations",
-            "Undo Last Annotation",
-            "Exit Annotation Mode"
-        )
-
-        android.app.AlertDialog.Builder(this)
-            .setTitle("Annotation Controls")
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> annotationTool?.clearAllAnnotations()
-                    1 -> annotationTool?.undoLastAnnotation()
-                    2 -> annotationTool?.toggleAnnotationMode(false)
-                }
-            }
-            .show()
-    }
-
     private fun showModelBrowser() {
         modelBrowserDrawer?.show()
-    }
-
-    private fun showAddContainerMenu() {
-        val containerTypes = arrayOf(
-            "Standard Container",
-            "Text Container",
-            "Image Container",
-            "Minimal Container",
-            "Read-Only Container",
-            "3D Model (Browse Library)"
-        )
-
-        android.app.AlertDialog.Builder(this)
-            .setTitle("Add Container")
-            .setItems(containerTypes) { _, which ->
-                when (which) {
-                    0 -> containerManager.addStandardContainer()
-                    1 -> containerManager.addTextContainer()
-                    2 -> containerManager.addImageContainer()
-                    3 -> containerManager.addMinimalContainer()
-                    4 -> containerManager.addReadOnlyContainer()
-                    5 -> showModelBrowser()
-                }
-            }
-            .show()
     }
 
     private fun createCustom3DContainer(modelData: ModelData, fullPath: String) {
@@ -450,7 +836,8 @@ class WhiteboardActivity : AppCompatActivity() {
 
     fun pauseAll3DRenderingForDrawing() {
         // Get 3D containers from containerManager (managed containers)
-        val managedContainer3Ds = containerManager.getAllContainers().filterIsInstance<Container3D>()
+        val managedContainer3Ds =
+            containerManager.getAllContainers().filterIsInstance<Container3D>()
 
         // Also get 3D containers directly from mainLayout (direct containers)
         val directContainer3Ds = mutableListOf<Container3D>()
@@ -473,7 +860,8 @@ class WhiteboardActivity : AppCompatActivity() {
 
     fun resumeAll3DRenderingAfterDrawing() {
         // Same logic for resume
-        val managedContainer3Ds = containerManager.getAllContainers().filterIsInstance<Container3D>()
+        val managedContainer3Ds =
+            containerManager.getAllContainers().filterIsInstance<Container3D>()
 
         val directContainer3Ds = mutableListOf<Container3D>()
         for (i in 0 until mainLayout.childCount) {

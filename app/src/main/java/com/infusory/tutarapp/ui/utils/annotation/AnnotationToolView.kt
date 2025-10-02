@@ -38,6 +38,7 @@ class AnnotationToolbar @JvmOverloads constructor(
     private lateinit var arrowButton: ImageButton
     private lateinit var selectionButton: ImageButton
     private lateinit var undoButton: ImageButton
+    private lateinit var redoButton: ImageButton
     private lateinit var clearButton: ImageButton
     private lateinit var closeButton: ImageButton
 
@@ -47,6 +48,7 @@ class AnnotationToolbar @JvmOverloads constructor(
     // Callbacks
     var onToolSelected: ((AnnotationTool) -> Unit)? = null
     var onUndoPressed: (() -> Unit)? = null
+    var onredoPressed: (() -> Unit)? = null
     var onClearPressed: (() -> Unit)? = null
     var onCloseAnnotation: (() -> Unit)? = null
 
@@ -61,7 +63,7 @@ class AnnotationToolbar @JvmOverloads constructor(
         background = createToolbarBackground()
 
         // Add padding
-        val padding = dpToPx(12)
+        val padding = dpToPx(10)
         setPadding(padding, padding, padding, padding)
 
         // Create tool buttons
@@ -73,15 +75,15 @@ class AnnotationToolbar @JvmOverloads constructor(
 
     private fun createToolbarBackground(): GradientDrawable {
         return GradientDrawable().apply {
-            cornerRadius = dpToPx(25).toFloat()
-            setColor(ContextCompat.getColor(context, android.R.color.black))
+            cornerRadius = dpToPx(15).toFloat()
+            setColor(ContextCompat.getColor(context, android.R.color.darker_gray))
             alpha = 200 // Semi-transparent
         }
     }
 
     private fun createToolButtons() {
         // Free Draw Button
-        freeDrawButton = createToolButton(R.drawable.ic_flash, "Free Draw") {
+        freeDrawButton = createToolButton(R.drawable.ic_write_tool, "Free Draw") {
             selectTool(AnnotationTool.FREE_DRAW)
         }
         addView(freeDrawButton)
@@ -89,31 +91,31 @@ class AnnotationToolbar @JvmOverloads constructor(
         addSeparator()
 
         // Line Button
-        lineButton = createToolButton(R.drawable.ic_flash, "Line") {
+        lineButton = createToolButton(R.drawable.ic_line_tool, "Line") {
             selectTool(AnnotationTool.LINE)
         }
         addView(lineButton)
 
         // Rectangle Button
-        rectangleButton = createToolButton(R.drawable.ic_flash, "Rectangle") {
+        rectangleButton = createToolButton(R.drawable.ic_square_tool, "Rectangle") {
             selectTool(AnnotationTool.RECTANGLE)
         }
         addView(rectangleButton)
 
         // Circle Button
-        circleButton = createToolButton(R.drawable.ic_flash, "Circle") {
+        circleButton = createToolButton(R.drawable.ic_circle_tool, "Circle") {
             selectTool(AnnotationTool.CIRCLE)
         }
         addView(circleButton)
 
         // Arrow Button
-        arrowButton = createToolButton(R.drawable.ic_flash, "Arrow") {
+        arrowButton = createToolButton(R.drawable.ic_arrow_tool, "Arrow") {
             selectTool(AnnotationTool.ARROW)
         }
         addView(arrowButton)
 
         // Selection Button
-        selectionButton = createToolButton(R.drawable.ic_flash, "Selection") {
+        selectionButton = createToolButton(R.drawable.ic_select_tool, "Selection") {
             selectTool(AnnotationTool.SELECTION)
         }
         addView(selectionButton)
@@ -121,29 +123,34 @@ class AnnotationToolbar @JvmOverloads constructor(
         addSeparator()
 
         // Undo Button
-        undoButton = createActionButton(R.drawable.ic_flash, "Undo") {
+
+        undoButton = createToolButton(R.drawable.ic_undo_tool, "Undo") {
             onUndoPressed?.invoke()
         }
         addView(undoButton)
 
+        // Redo Button
+
+        redoButton = createToolButton(R.drawable.ic_redo_tool, "Redo") {
+            onredoPressed?.invoke()
+        }
+        addView(redoButton)
+        addSeparator()
+
         // Clear Button
-        clearButton = createActionButton(R.drawable.ic_flash, "Clear") {
+        clearButton = createToolButton(R.drawable.ic_clear_tool, "Clear") {
             onClearPressed?.invoke()
         }
         addView(clearButton)
-
-        addSeparator()
-
-        // Close Button
-        closeButton = createActionButton(R.drawable.ic_flash, "Close") {
-            onCloseAnnotation?.invoke()
-        }
-        addView(closeButton)
     }
 
-    private fun createToolButton(iconRes: Int, contentDescription: String, onClick: () -> Unit): ImageButton {
+    private fun createToolButton(
+        iconRes: Int,
+        contentDescription: String,
+        onClick: () -> Unit
+    ): ImageButton {
         return ImageButton(context).apply {
-            layoutParams = LinearLayout.LayoutParams(dpToPx(40), dpToPx(40)).apply {
+            layoutParams = LinearLayout.LayoutParams(dpToPx(30), dpToPx(30)).apply {
                 marginStart = dpToPx(4)
                 marginEnd = dpToPx(4)
             }
@@ -157,21 +164,6 @@ class AnnotationToolbar @JvmOverloads constructor(
         }
     }
 
-    private fun createActionButton(iconRes: Int, contentDescription: String, onClick: () -> Unit): ImageButton {
-        return ImageButton(context).apply {
-            layoutParams = LinearLayout.LayoutParams(dpToPx(40), dpToPx(40)).apply {
-                marginStart = dpToPx(4)
-                marginEnd = dpToPx(4)
-            }
-
-            background = createButtonBackground(false)
-            setImageResource(iconRes)
-            setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
-            this.contentDescription = contentDescription
-
-            setOnClickListener { onClick() }
-        }
-    }
 
     private fun addSeparator() {
         val separator = View(context).apply {
@@ -190,7 +182,7 @@ class AnnotationToolbar @JvmOverloads constructor(
             if (selected) {
                 setColor(ContextCompat.getColor(context, android.R.color.holo_blue_light))
             } else {
-                setColor(ContextCompat.getColor(context, android.R.color.transparent))
+                setColor(ContextCompat.getColor(context, android.R.color.background_light))
             }
         }
     }
@@ -263,6 +255,7 @@ class AnnotationToolView @JvmOverloads constructor(
 
     // Callbacks
     var onAnnotationToggle: ((Boolean) -> Unit)? = null
+
     // Callback for 3D rendering control
     var onDrawingStateChanged: ((isDrawing: Boolean) -> Unit)? = null
 
@@ -298,6 +291,10 @@ class AnnotationToolView @JvmOverloads constructor(
         annotationToolbar?.onUndoPressed = {
             drawingView?.undoLastDrawing()
         }
+        annotationToolbar?.onredoPressed = {
+            drawingView?.redoLastDrawing()
+        }
+
 
         annotationToolbar?.onClearPressed = {
             drawingView?.clearAllDrawings()
@@ -357,54 +354,149 @@ class AnnotationToolView @JvmOverloads constructor(
             strokeJoin = Paint.Join.ROUND
         }
 
+        // selecting button state
+        private var selectedPath: DrawingPath? = null
+        private var isResizing = false
+        private var lastTouchX = 0f
+        private var lastTouchY = 0f
+
+
         private var currentPath = Path()
         private var paths = mutableListOf<DrawingPath>()
         private var startX = 0f
         private var startY = 0f
         private var isDrawing = false
-        private var touchEnabled = false // Control touch interaction
-
-        // Callback for drawing state changes
+        private var touchEnabled = false
+        private var undonePaths = mutableListOf<DrawingPath>()
         var onDrawingStateChanged: ((Boolean) -> Unit)? = null
 
         override fun onDraw(canvas: Canvas) {
             super.onDraw(canvas)
 
-            // ALWAYS draw all saved paths (preserves drawings when tools are hidden)
             paths.forEach { drawingPath ->
                 canvas.drawPath(drawingPath.path, drawingPath.paint)
             }
 
-            // Draw current path if drawing
-            if (isDrawing && touchEnabled) {
+            if (isDrawing && touchEnabled && currentTool != AnnotationTool.SELECTION) {
                 canvas.drawPath(currentPath, paint)
+            }
+
+            // Highlight selection
+            selectedPath?.let {
+                val highlightPaint = Paint().apply {
+                    color = Color.BLUE
+                    style = Paint.Style.STROKE
+                    strokeWidth = 3f
+                    pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
+                }
+                it.updateBounds()
+                canvas.drawRect(it.bounds, highlightPaint)
+
+                // Draw resize handle
+                val handleSize = 20f
+                canvas.drawRect(
+                    it.bounds.right - handleSize,
+                    it.bounds.bottom - handleSize,
+                    it.bounds.right + handleSize,
+                    it.bounds.bottom + handleSize,
+                    highlightPaint
+                )
             }
         }
 
         override fun onTouchEvent(event: MotionEvent): Boolean {
-            // Only handle touch events if touch is enabled
-            if (!touchEnabled) {
-                return false
-            }
+            if (!touchEnabled) return false
 
             val x = event.x
             val y = event.y
 
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    startDrawing(x, y)
-                    return true
+                    if (currentTool == AnnotationTool.SELECTION) {
+                        handleSelectionDown(x, y)
+                        return true
+                    } else {
+                        startDrawing(x, y)
+                        return true
+                    }
                 }
+
                 MotionEvent.ACTION_MOVE -> {
-                    continueDrawing(x, y)
-                    return true
+                    if (currentTool == AnnotationTool.SELECTION) {
+                        handleSelectionMove(x, y)
+                        return true
+                    } else {
+                        continueDrawing(x, y)
+                        return true
+                    }
                 }
+
                 MotionEvent.ACTION_UP -> {
-                    finishDrawing(x, y)
-                    return true
+                    if (currentTool == AnnotationTool.SELECTION) {
+                        isResizing = false
+                        return true
+                    } else {
+                        finishDrawing(x, y)
+                        return true
+                    }
                 }
             }
             return false
+        }
+
+        private fun handleSelectionDown(x: Float, y: Float) {
+            selectedPath = null
+            for (path in paths.reversed()) { // check top-most first
+                path.updateBounds()
+                if (path.bounds.contains(x, y)) {
+                    selectedPath = path
+                    lastTouchX = x
+                    lastTouchY = y
+                    // Check if near bottom-right corner → start resizing
+                    if (isNearCorner(x, y, path.bounds)) {
+                        isResizing = true
+                    }
+                    break
+                }
+            }
+            invalidate()
+        }
+
+        private fun handleSelectionMove(x: Float, y: Float) {
+            selectedPath?.let { path ->
+                val dx = x - lastTouchX
+                val dy = y - lastTouchY
+
+                if (isResizing) {
+                    // Scale path using Matrix
+                    val scaleX = (path.bounds.width() + dx) / path.bounds.width()
+                    val scaleY = (path.bounds.height() + dy) / path.bounds.height()
+                    val matrix = Matrix().apply {
+                        setScale(scaleX, scaleY, path.bounds.left, path.bounds.top)
+                    }
+                    path.path.transform(matrix)
+                    path.updateBounds()
+                } else {
+                    // Move path
+                    val matrix = Matrix().apply { setTranslate(dx, dy) }
+                    path.path.transform(matrix)
+                    path.updateBounds()
+                }
+
+                lastTouchX = x
+                lastTouchY = y
+                invalidate()
+            }
+        }
+
+        private fun isNearCorner(
+            x: Float,
+            y: Float,
+            bounds: RectF,
+            threshold: Float = 40f
+        ): Boolean {
+            return (x >= bounds.right - threshold && x <= bounds.right + threshold &&
+                    y >= bounds.bottom - threshold && y <= bounds.bottom + threshold)
         }
 
         // Method to enable/disable touch interaction
@@ -426,6 +518,7 @@ class AnnotationToolView @JvmOverloads constructor(
                 AnnotationTool.FREE_DRAW -> {
                     currentPath.moveTo(x, y)
                 }
+
                 else -> {
                     // For shapes, we'll draw on ACTION_UP
                 }
@@ -439,17 +532,20 @@ class AnnotationToolView @JvmOverloads constructor(
                     currentPath.lineTo(x, y)
                     invalidate()
                 }
+
                 AnnotationTool.LINE -> {
                     currentPath.reset()
                     currentPath.moveTo(startX, startY)
                     currentPath.lineTo(x, y)
                     invalidate()
                 }
+
                 AnnotationTool.RECTANGLE -> {
                     currentPath.reset()
                     currentPath.addRect(startX, startY, x, y, Path.Direction.CW)
                     invalidate()
                 }
+
                 AnnotationTool.CIRCLE -> {
                     currentPath.reset()
                     val radius = kotlin.math.sqrt(
@@ -458,32 +554,32 @@ class AnnotationToolView @JvmOverloads constructor(
                     currentPath.addCircle(startX, startY, radius, Path.Direction.CW)
                     invalidate()
                 }
+
                 AnnotationTool.ARROW -> {
                     currentPath.reset()
                     drawArrow(currentPath, startX, startY, x, y)
                     invalidate()
                 }
+
                 AnnotationTool.SELECTION -> {
                     // Handle selection logic here
                 }
             }
         }
 
+
         private fun finishDrawing(x: Float, y: Float) {
             if (isDrawing && currentTool != AnnotationTool.SELECTION) {
-                // Save the current path
                 val newPaint = Paint(paint)
                 paths.add(DrawingPath(Path(currentPath), newPaint))
+                undonePaths.clear()
                 currentPath.reset()
             }
             isDrawing = false
-
-            // REMOVED: Direct calls to containerManager - use callback instead
-            // Notify that drawing has ended - resume 3D rendering
             onDrawingStateChanged?.invoke(false)
-
             invalidate()
         }
+
 
         private fun drawArrow(path: Path, startX: Float, startY: Float, endX: Float, endY: Float) {
             path.moveTo(startX, startY)
@@ -515,9 +611,11 @@ class AnnotationToolView @JvmOverloads constructor(
                 AnnotationTool.FREE_DRAW, AnnotationTool.LINE, AnnotationTool.ARROW -> {
                     paint.style = Paint.Style.STROKE
                 }
+
                 AnnotationTool.RECTANGLE, AnnotationTool.CIRCLE -> {
                     paint.style = Paint.Style.STROKE // Change to FILL for filled shapes
                 }
+
                 AnnotationTool.SELECTION -> {
                     // Selection tool doesn't draw
                 }
@@ -532,10 +630,20 @@ class AnnotationToolView @JvmOverloads constructor(
 
         fun undoLastDrawing() {
             if (paths.isNotEmpty()) {
-                paths.removeAt(paths.size - 1)
+                val last = paths.removeAt(paths.size - 1)
+                undonePaths.add(last)   // 🔹 keep it for redo
                 invalidate()
             }
         }
+
+        fun redoLastDrawing() {
+            if (undonePaths.isNotEmpty()) {
+                val restored = undonePaths.removeAt(undonePaths.size - 1)
+                paths.add(restored)
+                invalidate()
+            }
+        }
+
 
         fun clearSelection() {
             // Clear any selection state
@@ -545,6 +653,11 @@ class AnnotationToolView @JvmOverloads constructor(
     // Data class to store drawing paths with their paint properties
     private data class DrawingPath(
         val path: Path,
-        val paint: Paint
-    )
+        val paint: Paint,
+        var bounds: RectF = RectF()
+    ) {
+        fun updateBounds() {
+            path.computeBounds(bounds, true)
+        }
+    }
 }
