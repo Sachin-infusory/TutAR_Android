@@ -102,6 +102,7 @@ class PopupHandler(private val context: Context) {
         // Set up hue slider listener
         hueSlider.onHueSelected = { hue ->
             colorPalette.setHue(hue)
+            // FIX: Get the current color AFTER updating the hue
             currentSelectedColor = colorPalette.getCurrentColor()
             updateColorDisplay(currentSelectedColor, selectedColorPreview, hexColorText)
         }
