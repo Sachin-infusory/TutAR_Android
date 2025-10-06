@@ -30,13 +30,23 @@
         android:background="@drawable/bg_color_black"
         android:layout_marginStart="8dp"/>
 
-    <RadioButton
-        android:id="@+id/colorSplit"
+<!--    <RadioButton-->
+<!--        android:id="@+id/colorSplit"-->
+<!--        android:layout_width="30dp"-->
+<!--        android:layout_height="30dp"-->
+<!--        android:button="@null"-->
+<!--        android:background="@drawable/bg_color_split"-->
+<!--        android:layout_marginStart="8dp"/>-->
+
+    <!-- New Color Picker Button -->
+    <ImageButton
+        android:id="@+id/btnColorPicker"
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:button="@null"
-        android:background="@drawable/bg_color_split"
-        android:layout_marginStart="8dp"/>
+        android:background="@drawable/ic_color_picker"
+        android:scaleType="centerInside"
+        android:layout_marginStart="8dp"
+        android:contentDescription="Color Picker"/>
 
     <ImageButton
         android:id="@+id/btnPickImage"
@@ -46,6 +56,3 @@
         android:scaleType="centerInside"
         android:layout_marginStart="8dp"/>
 </LinearLayout>
-
-
-

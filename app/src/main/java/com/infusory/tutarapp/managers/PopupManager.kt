@@ -1,6 +1,7 @@
 package com.infusory.tutarapp.managers
 
 import android.content.Context
+import android.graphics.Color
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -39,6 +40,7 @@ class PopupHandler(private val context: Context) {
         val white = colorView.findViewById<RadioButton>(R.id.colorWhite)
         val green = colorView.findViewById<RadioButton>(R.id.colorGreen)
         val black = colorView.findViewById<RadioButton>(R.id.colorBlack)
+        val colorPicker = colorView.findViewById<ImageButton>(R.id.btnColorPicker)
         val pickImage = colorView.findViewById<ImageButton>(R.id.btnPickImage)
 
         // Set background color actions
@@ -63,6 +65,12 @@ class PopupHandler(private val context: Context) {
             popup.dismiss()
         }
 
+        // Color picker button
+        colorPicker.setOnClickListener {
+            popup.dismiss()
+            showCustomColorPickerDialog(surfaceView)
+        }
+
         // Image picker
         pickImage.setOnClickListener {
             popup.dismiss()
@@ -79,6 +87,57 @@ class PopupHandler(private val context: Context) {
                 R.drawable.circular_button_background
             )
         }
+    }
+
+    private fun showCustomColorPickerDialog(surfaceView: SurfaceView) {
+        val dialogView = inflater.inflate(R.layout.dialog_custom_color_picker, null)
+
+        val colorPalette = dialogView.findViewById<com.infusory.tutarapp.ui.components.ColorPaletteView>(R.id.colorPalette)
+        val hueSlider = dialogView.findViewById<com.infusory.tutarapp.ui.components.HueSliderView>(R.id.hueSlider)
+        val selectedColorPreview = dialogView.findViewById<View>(R.id.selectedColorPreview)
+        val hexColorText = dialogView.findViewById<TextView>(R.id.hexColorText)
+
+        var currentSelectedColor = Color.WHITE
+
+        // Set up hue slider listener
+        hueSlider.onHueSelected = { hue ->
+            colorPalette.setHue(hue)
+            currentSelectedColor = colorPalette.getCurrentColor()
+            updateColorDisplay(currentSelectedColor, selectedColorPreview, hexColorText)
+        }
+
+        // Set up color palette listener
+        colorPalette.onColorSelected = { color ->
+            currentSelectedColor = color
+            updateColorDisplay(currentSelectedColor, selectedColorPreview, hexColorText)
+        }
+
+        // Initialize with white color
+        updateColorDisplay(currentSelectedColor, selectedColorPreview, hexColorText)
+
+        // Show dialog
+        val dialog = android.app.AlertDialog.Builder(context)
+            .setView(dialogView)
+            .setPositiveButton("Apply") { _, _ ->
+                surfaceView.setBackgroundColor(currentSelectedColor)
+            }
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.show()
+    }
+
+    private fun updateColorDisplay(
+        color: Int,
+        colorPreview: View,
+        hexText: TextView
+    ) {
+        colorPreview.setBackgroundColor(color)
+        hexText.text = String.format("#%02X%02X%02X",
+            Color.red(color),
+            Color.green(color),
+            Color.blue(color)
+        )
     }
 
     fun showActionOptionsPopup(

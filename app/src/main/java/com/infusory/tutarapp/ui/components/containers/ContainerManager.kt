@@ -164,6 +164,16 @@ class ContainerManager(
         return addContainer(container, "YouTube container added")
     }
 
+    fun addWebsiteContainer(): ContainerBase? {
+        if (containers.size >= maxContainers) {
+            showMaxContainersMessage()
+            return null
+        }
+
+        val container = ContainerWebsite(context)
+        return addContainer(container, "Website container added")
+    }
+
     fun getContainerCount(): Int = containers.size
 
     fun getAllContainers(): List<ContainerBase> = containers.toList()
@@ -197,6 +207,8 @@ class ContainerManager(
                 ContainerBase.ContainerType.IMAGE -> ContainerImage(context)
                 ContainerBase.ContainerType.PDF -> ContainerPdf(context)
                 ContainerBase.ContainerType.YOUTUBE -> ContainerPdf(context)
+                ContainerBase.ContainerType.WEBSITE -> ContainerPdf(context)
+
 
             }
 

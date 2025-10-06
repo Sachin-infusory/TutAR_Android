@@ -207,10 +207,10 @@ class Container3D @JvmOverloads constructor(
             container.addView(animationToggleButton!!)
 
             // Animation mode toggle button
-            container.addView(createSideControlButton(
-                android.R.drawable.ic_menu_sort_by_size,
-                "Animation Mode"
-            ) { toggleAnimationMode() })
+//            container.addView(createSideControlButton(
+//                android.R.drawable.ic_menu_sort_by_size,
+//                "Animation Mode"
+//            ) { toggleAnimationMode() })
 
             // Add some spacing
             container.addView(createSpacer())
@@ -677,24 +677,24 @@ class Container3D @JvmOverloads constructor(
         }
     }
 
-    private fun toggleAnimationMode() {
-        val animator = modelViewer?.animator
-        if (animator == null || animator.animationCount == 0) {
-            android.widget.Toast.makeText(context, "No animations available", android.widget.Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        isPlayingAllAnimations = !isPlayingAllAnimations
-
-        // Reset animation timing when switching modes
-        animationStartTime = System.nanoTime()
-        currentAnimationDuration = 0f
-        pausedAnimationTime = 0f
-        currentAnimationIndex = 0
-
-        val mode = if (isPlayingAllAnimations) "All Animations Together" else "Individual Animation Clips"
-        android.widget.Toast.makeText(context, "Animation Mode: $mode", android.widget.Toast.LENGTH_LONG).show()
-    }
+//    private fun toggleAnimationMode() {
+//        val animator = modelViewer?.animator
+//        if (animator == null || animator.animationCount == 0) {
+//            android.widget.Toast.makeText(context, "No animations available", android.widget.Toast.LENGTH_SHORT).show()
+//            return
+//        }
+//
+//        isPlayingAllAnimations = !isPlayingAllAnimations
+//
+//        // Reset animation timing when switching modes
+//        animationStartTime = System.nanoTime()
+//        currentAnimationDuration = 0f
+//        pausedAnimationTime = 0f
+//        currentAnimationIndex = 0
+//
+//        val mode = if (isPlayingAllAnimations) "All Animations Together" else "Individual Animation Clips"
+//        android.widget.Toast.makeText(context, "Animation Mode: $mode", android.widget.Toast.LENGTH_LONG).show()
+//    }
 
     private fun toggleAnimation() {
         val animator = modelViewer?.animator

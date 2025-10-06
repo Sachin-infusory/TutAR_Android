@@ -20,7 +20,8 @@ open class ContainerBase @JvmOverloads constructor(
         IMAGE,
         MODEL_3D,
         PDF,
-        YOUTUBE
+        YOUTUBE,
+        WEBSITE
     }
 
     // Callback for when container requests to be removed

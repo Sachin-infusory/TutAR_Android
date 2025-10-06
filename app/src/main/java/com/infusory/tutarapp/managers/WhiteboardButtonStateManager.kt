@@ -17,8 +17,7 @@ class WhiteboardButtonStateManager(private val context: Context) {
     private val individualButtonIds = listOf(
         R.id.color_plate,
         R.id.btn_save,
-        R.id.btn_insert,
-        R.id.btn_more
+        R.id.btn_insert
     )
 
     // Paired button IDs (buttons that should sync across left/right toolbars)

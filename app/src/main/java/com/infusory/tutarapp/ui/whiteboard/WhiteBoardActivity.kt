@@ -105,7 +105,7 @@ class WhiteboardActivity : AppCompatActivity() {
             RelativeLayout.LayoutParams.MATCH_PARENT
         )
         annotationTool?.layoutParams = layoutParams
-        annotationTool?.elevation = 200f
+        annotationTool?.elevation = 200f  // High elevation for drawing layer
         mainLayout.addView(annotationTool)
 
         annotationTool?.onAnnotationToggle = { isEnabled ->
@@ -125,9 +125,10 @@ class WhiteboardActivity : AppCompatActivity() {
                 RelativeLayout.LayoutParams.MATCH_PARENT,
                 RelativeLayout.LayoutParams.MATCH_PARENT
             )
-            elevation = 1f
+            elevation = 0f  // Lowest elevation - acts as background
             visibility = View.GONE
         }
+        // Add camera preview at index 0 (bottom layer)
         mainLayout.addView(cameraPreviewView, 0)
 
         cameraManager = CameraManager(this, this, cameraPreviewView, surfaceView)
@@ -264,11 +265,11 @@ class WhiteboardActivity : AppCompatActivity() {
                     btnInsert,
                     ActionType.INSERT,
                     onInsertImage = { imagePickerHandler.pickContainerImage() },
-                    onInsertPdf = { imagePickerHandler.pickContainerPdf() },  // Add this line
+                    onInsertPdf = { imagePickerHandler.pickContainerPdf() },
                     onInsertYoutube = {
                         containerManager.addYouTubeContainer()
                     },
-                    onInsertWebsite = { /* TODO */ }
+                    onInsertWebsite = { containerManager.addWebsiteContainer() }
                 )
             }
         }
@@ -283,12 +284,6 @@ class WhiteboardActivity : AppCompatActivity() {
                 onResumeAll3D = { resumeAll3DRenderingAfterDrawing() },
                 isCameraActive = cameraManager.isCameraActive()
             )
-        }
-
-        // More button
-        val btnMore = toolbar.findViewById<ImageButton>(R.id.btn_more)
-        buttonStateManager.setupButton(btnMore) {
-            // TODO: Implement more functionality
         }
     }
 
@@ -399,6 +394,9 @@ class WhiteboardActivity : AppCompatActivity() {
         )
         container3D.layoutParams = layoutParams
 
+        // Set elevation to ensure containers are above camera (elevation 0) but below annotation (elevation 200)
+        container3D.elevation = 50f
+
         val offsetX = containerManager.getContainerCount() * 60f
         val offsetY = containerManager.getContainerCount() * 60f + 100f
         container3D.moveContainerTo(offsetX, offsetY, animate = false)
@@ -409,7 +407,6 @@ class WhiteboardActivity : AppCompatActivity() {
 
         mainLayout.addView(container3D)
         container3D.initializeContent()
-
     }
 
     fun pauseAll3DRenderingForDrawing() {
