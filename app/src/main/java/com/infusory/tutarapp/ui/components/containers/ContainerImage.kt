@@ -1,16 +1,16 @@
 // ContainerImage.kt
-package com.infusory.tutarapp.ui.containers
+package com.infusory.tutarapp.ui.components.containers
 
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
+import android.view.View
 import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import com.infusory.tutarapp.R
-import com.infusory.tutarapp.ui.utils.containers.ControlButton
-import com.infusory.tutarapp.ui.utils.containers.ButtonPosition
+import com.infusory.tutarapp.ui.components.containers.ControlButton
+import com.infusory.tutarapp.ui.components.containers.ButtonPosition
+import com.infusory.tutarapp.ui.components.containers.ContainerBase
 
 class ContainerImage @JvmOverloads constructor(
     context: Context,
@@ -20,12 +20,16 @@ class ContainerImage @JvmOverloads constructor(
 
     private var currentImageResource: Int? = null
     private var currentImagePath: String? = null
+    private var currentBitmap: Bitmap? = null
     private var imageRotation = 0f
     private var imageAlpha = 1.0f
-    private var imageScaleType = ImageView.ScaleType.CENTER_INSIDE
+    private var imageScaleType = ImageView.ScaleType.CENTER_CROP
     private var applyFilter = FilterType.NONE
     private var imageTint: Int? = null
     private var currentImageView: ImageView? = null
+
+    // Store the original aspect ratio to maintain it during resizing
+    private var imageAspectRatio: Float = 1f
 
     enum class FilterType {
         NONE, GRAYSCALE, SEPIA, BLUR, BRIGHTNESS, CONTRAST, VINTAGE
@@ -33,17 +37,110 @@ class ContainerImage @JvmOverloads constructor(
 
     init {
         setupImageContainer()
+        // Remove any default padding from the container
+        setPadding(0, 0, 0, 0)
+
+        // Enable aspect ratio maintenance for image containers
+        maintainAspectRatio = true
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+
+        if (changed) {
+            android.util.Log.d("ContainerImage", "Container laid out: ${right - left} x ${bottom - top}")
+        }
     }
 
     fun setImage(bitmap: Bitmap, path: String) {
-        currentImageView?.setImageBitmap(bitmap)
-        setImagePath(path)
+        currentBitmap = bitmap
+        currentImagePath = path
+        currentImageResource = null
+
+        // Get actual bitmap dimensions (not rotated)
+        val actualWidth = bitmap.width
+        val actualHeight = bitmap.height
+
+        // Store the aspect ratio for future resize operations
+        imageAspectRatio = actualWidth.toFloat() / actualHeight.toFloat()
+
+        // Update the parent container's aspect ratio property and enable maintenance
+        maintainAspectRatio = true
+        aspectRatio = imageAspectRatio
+
+        android.util.Log.d("ContainerImage", "Setting image: ${actualWidth} x ${actualHeight}, aspect ratio: $imageAspectRatio, maintain: $maintainAspectRatio")
+
+        // Update container size to match ACTUAL image dimensions
+        updateContainerSizeToImage(actualWidth, actualHeight)
+
+        // Set the image to the ImageView
+        currentImageView?.apply {
+            setImageBitmap(bitmap)
+            setPadding(0, 0, 0, 0)
+            scaleType = ImageView.ScaleType.CENTER_CROP  // Use CENTER_CROP to fill without distortion
+            adjustViewBounds = false  // Changed to false to prevent additional margins
+        }
         updateImageView()
     }
 
+    private fun updateContainerSizeToImage(imageWidth: Int, imageHeight: Int) {
+        val density = context.resources.displayMetrics.density
+
+        // Maximum dimensions to prevent extremely large containers
+        val maxWidth = (800 * density).toInt()
+        val maxHeight = (800 * density).toInt()
+
+        // Start with actual image dimensions
+        var targetWidth = imageWidth
+        var targetHeight = imageHeight
+
+        // Scale down if image is too large, maintaining aspect ratio
+        if (imageWidth > maxWidth || imageHeight > maxHeight) {
+            val widthRatio = maxWidth.toFloat() / imageWidth
+            val heightRatio = maxHeight.toFloat() / imageHeight
+            val scaleFactor = minOf(widthRatio, heightRatio)
+
+            targetWidth = (imageWidth * scaleFactor).toInt()
+            targetHeight = (imageHeight * scaleFactor).toInt()
+        }
+
+        // Ensure minimum size for usability
+        val minSize = (100 * density).toInt()
+        targetWidth = maxOf(targetWidth, minSize)
+        targetHeight = maxOf(targetHeight, minSize)
+
+        android.util.Log.d("ContainerImage", "Setting container size: $targetWidth x $targetHeight")
+
+        // Update base dimensions to match the image's initial size
+        baseWidth = targetWidth
+        baseHeight = targetHeight
+        currentWidth = targetWidth
+        currentHeight = targetHeight
+
+        // Update the container's layout params with correct width and height
+        val newLayoutParams = when (val params = layoutParams) {
+            is android.widget.RelativeLayout.LayoutParams -> {
+                params.width = targetWidth
+                params.height = targetHeight
+                params
+            }
+            is android.view.ViewGroup.MarginLayoutParams -> {
+                params.width = targetWidth
+                params.height = targetHeight
+                params
+            }
+            else -> {
+                android.view.ViewGroup.LayoutParams(targetWidth, targetHeight)
+            }
+        }
+
+        layoutParams = newLayoutParams
+        requestLayout()
+    }
 
     private fun setupImageContainer() {
-//        clearControlButtons()
+        // Remove any padding from container
+        setPadding(4, 4, 4, 4)
 
         val buttons = listOf(
             ControlButton(
@@ -81,61 +178,52 @@ class ContainerImage @JvmOverloads constructor(
     }
 
     private fun createImageView() {
-        val container = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
-            setBackgroundColor(Color.parseColor("#FAFAFA"))
-        }
-
         currentImageView = ImageView(context).apply {
-            // Set default image if no image is loaded
-            if (currentImageResource == null && currentImagePath == null) {
-                setImageResource(R.drawable.tutar_logo) // Default placeholder
-                currentImageResource = R.drawable.tutar_logo
-            } else {
-                currentImageResource?.let { setImageResource(it) }
-                // TODO: Handle image path loading
+            // Only set image if one exists
+            currentBitmap?.let {
+                setImageBitmap(it)
+            } ?: currentImageResource?.let {
+                setImageResource(it)
             }
 
+            // Remove any padding from ImageView
+            setPadding(0, 0, 0, 0)
+
             scaleType = imageScaleType
+            adjustViewBounds = false  // Set to false to prevent unwanted margins
             rotation = imageRotation
-            alpha = imageAlpha.toFloat()
+            imageAlpha = (this@ContainerImage.imageAlpha * 255).toInt()
 
             // Apply tint if set
             imageTint?.let { setColorFilter(it, PorterDuff.Mode.SRC_ATOP) }
 
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
+            // Match parent to fill the container completely with NO margins
+            layoutParams = android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+            ).apply {
+                setMargins(0, 0, 0, 0)  // Zero margins
+            }
         }
 
-        container.addView(currentImageView)
+        // Remove existing content (except buttons)
+        val viewsToRemove = mutableListOf<View>()
+        for (i in 0 until childCount) {
+            val child = getChildAt(i)
+            // Check if it's a button by seeing if it's an ImageView with small size
+            val isButton = child is ImageView &&
+                    child.layoutParams.width == dpToPx(24) &&
+                    child.layoutParams.height == dpToPx(24)
+            if (!isButton) {
+                viewsToRemove.add(child)
+            }
+        }
+        viewsToRemove.forEach { view -> removeView(view) }
 
-        // Add image info text
-        container.addView(TextView(context).apply {
-            text = getImageInfo()
-            textSize = 10f
-            gravity = android.view.Gravity.CENTER
-            setTextColor(Color.GRAY)
-            setPadding(0, dpToPx(4), 0, 0)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        })
+        // Add the image view at index 0 so buttons stay on top
+        addView(currentImageView!!, 0)
 
-        setContent(container)
         applyCurrentFilter()
-    }
-
-    private fun getImageInfo(): String {
-        val rotationText = if (imageRotation != 0f) " • ${imageRotation.toInt()}°" else ""
-        val filterText = if (applyFilter != FilterType.NONE) " • ${applyFilter.name}" else ""
-        val alphaText = if (imageAlpha != 1.0f) " • ${(imageAlpha * 100).toInt()}%" else ""
-
-        return "Image${rotationText}${filterText}${alphaText}"
     }
 
     private fun showImageSelectionDialog() {
@@ -177,6 +265,7 @@ class ContainerImage @JvmOverloads constructor(
             .setItems(images) { _, which ->
                 currentImageResource = imageResources[which]
                 currentImagePath = null
+                currentBitmap = null
                 updateImageView()
                 android.widget.Toast.makeText(context, "Image: ${images[which]}", android.widget.Toast.LENGTH_SHORT).show()
             }
@@ -186,6 +275,7 @@ class ContainerImage @JvmOverloads constructor(
     private fun removeImage() {
         currentImageResource = null
         currentImagePath = null
+        currentBitmap = null
         currentImageView?.setImageDrawable(null)
         currentImageView?.setBackgroundColor(Color.LTGRAY)
         android.widget.Toast.makeText(context, "Image removed", android.widget.Toast.LENGTH_SHORT).show()
@@ -198,13 +288,13 @@ class ContainerImage @JvmOverloads constructor(
     }
 
     private fun showImageEditDialog() {
-        val editView = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
+        val editView = android.widget.LinearLayout(context).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
             setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16))
         }
 
         // Rotation control
-        editView.addView(TextView(context).apply {
+        editView.addView(android.widget.TextView(context).apply {
             text = "Rotation: ${imageRotation.toInt()}°"
             textSize = 16f
         })
@@ -216,7 +306,7 @@ class ContainerImage @JvmOverloads constructor(
                 override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
                     if (fromUser) {
                         imageRotation = progress.toFloat()
-                        (editView.getChildAt(0) as TextView).text = "Rotation: ${progress}°"
+                        (editView.getChildAt(0) as android.widget.TextView).text = "Rotation: ${progress}°"
                     }
                 }
                 override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
@@ -226,7 +316,7 @@ class ContainerImage @JvmOverloads constructor(
         editView.addView(rotationSeekBar)
 
         // Alpha control
-        editView.addView(TextView(context).apply {
+        editView.addView(android.widget.TextView(context).apply {
             text = "Opacity: ${(imageAlpha * 100).toInt()}%"
             textSize = 16f
             setPadding(0, dpToPx(16), 0, 0)
@@ -239,7 +329,7 @@ class ContainerImage @JvmOverloads constructor(
                 override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
                     if (fromUser) {
                         imageAlpha = progress / 100f
-                        (editView.getChildAt(2) as TextView).text = "Opacity: ${progress}%"
+                        (editView.getChildAt(2) as android.widget.TextView).text = "Opacity: ${progress}%"
                     }
                 }
                 override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
@@ -290,13 +380,13 @@ class ContainerImage @JvmOverloads constructor(
 
     private fun showScaleTypeDialog() {
         val scaleTypes = arrayOf(
-            "Center Inside", "Center Crop", "Fit XY", "Fit Center", "Fit Start", "Fit End", "Center", "Matrix"
+            "Fit XY (Fill)", "Center Crop", "Fit Center", "Center Inside", "Fit Start", "Fit End", "Center", "Matrix"
         )
         val scaleTypeValues = arrayOf(
-            ImageView.ScaleType.CENTER_INSIDE,
-            ImageView.ScaleType.CENTER_CROP,
             ImageView.ScaleType.FIT_XY,
+            ImageView.ScaleType.CENTER_CROP,
             ImageView.ScaleType.FIT_CENTER,
+            ImageView.ScaleType.CENTER_INSIDE,
             ImageView.ScaleType.FIT_START,
             ImageView.ScaleType.FIT_END,
             ImageView.ScaleType.CENTER,
@@ -353,7 +443,7 @@ class ContainerImage @JvmOverloads constructor(
     private fun resetAllEffects() {
         imageRotation = 0f
         imageAlpha = 1.0f
-        imageScaleType = ImageView.ScaleType.CENTER_INSIDE
+        imageScaleType = ImageView.ScaleType.CENTER_CROP  // Reset to CENTER_CROP
         applyFilter = FilterType.NONE
         imageTint = null
         updateImageView()
@@ -364,6 +454,10 @@ class ContainerImage @JvmOverloads constructor(
         val info = buildString {
             append("Image Information:\n\n")
             append("Source: ${if (currentImageResource != null) "Resource" else if (currentImagePath != null) "File" else "None"}\n")
+            currentBitmap?.let {
+                append("Bitmap Size: ${it.width} x ${it.height} (W×H)\n")
+            }
+            append("Container Size: ${width} x ${height} (W×H)\n")
             append("Rotation: ${imageRotation.toInt()}°\n")
             append("Opacity: ${(imageAlpha * 100).toInt()}%\n")
             append("Scale Type: ${imageScaleType.name}\n")
@@ -381,8 +475,9 @@ class ContainerImage @JvmOverloads constructor(
     private fun updateImageView() {
         currentImageView?.apply {
             rotation = imageRotation
-            alpha = imageAlpha.toFloat()
+            imageAlpha = (this@ContainerImage.imageAlpha * 255).toInt()
             scaleType = imageScaleType
+            adjustViewBounds = false  // Keep false to prevent margins
 
             // Clear previous tint
             clearColorFilter()
@@ -393,11 +488,6 @@ class ContainerImage @JvmOverloads constructor(
             // Apply filter
             applyCurrentFilter()
         }
-
-        // Update info text
-        val container = currentImageView?.parent as? LinearLayout
-        val infoText = container?.getChildAt(1) as? TextView
-        infoText?.text = getImageInfo()
     }
 
     private fun applyCurrentFilter() {
@@ -413,7 +503,6 @@ class ContainerImage @JvmOverloads constructor(
                 FilterType.SEPIA -> {
                     val matrix = ColorMatrix().apply {
                         setSaturation(0f)
-                        // Apply sepia effect
                         val sepiaMatrix = ColorMatrix(floatArrayOf(
                             0.393f, 0.769f, 0.189f, 0f, 0f,
                             0.349f, 0.686f, 0.168f, 0f, 0f,
@@ -458,8 +547,6 @@ class ContainerImage @JvmOverloads constructor(
                     imageView.colorFilter = ColorMatrixColorFilter(matrix)
                 }
                 FilterType.BLUR -> {
-                    // Note: Blur filter would require more complex implementation
-                    // This is a placeholder that darkens the image slightly
                     val matrix = ColorMatrix().apply {
                         set(floatArrayOf(
                             0.8f, 0f, 0f, 0f, 0f,
@@ -478,6 +565,7 @@ class ContainerImage @JvmOverloads constructor(
     fun setImageResource(resourceId: Int) {
         currentImageResource = resourceId
         currentImagePath = null
+        currentBitmap = null
         currentImageView?.setImageResource(resourceId)
         updateImageView()
     }
@@ -485,8 +573,6 @@ class ContainerImage @JvmOverloads constructor(
     fun setImagePath(path: String) {
         currentImagePath = path
         currentImageResource = null
-        // TODO: Implement actual image loading from path
-        android.widget.Toast.makeText(context, "Image path loading not implemented yet", android.widget.Toast.LENGTH_SHORT).show()
     }
 
     fun setImageRotation(rotation: Float) {
@@ -516,6 +602,7 @@ class ContainerImage @JvmOverloads constructor(
 
     fun getCurrentImageResource(): Int? = currentImageResource
     fun getCurrentImagePath(): String? = currentImagePath
+    fun getCurrentBitmap(): Bitmap? = currentBitmap
     fun getImageRotation(): Float = imageRotation
     fun getImageAlpha(): Float = imageAlpha
     fun getImageScaleType(): ImageView.ScaleType = imageScaleType
@@ -534,7 +621,8 @@ class ContainerImage @JvmOverloads constructor(
             "imageAlpha" to imageAlpha,
             "imageScaleType" to imageScaleType.name,
             "imageFilter" to applyFilter.name,
-            "imageTint" to (imageTint ?: -1)
+            "imageTint" to (imageTint ?: -1),
+            "imageAspectRatio" to imageAspectRatio
         ))
         return baseData
     }
@@ -561,7 +649,7 @@ class ContainerImage @JvmOverloads constructor(
                 try {
                     imageScaleType = ImageView.ScaleType.valueOf(it)
                 } catch (e: IllegalArgumentException) {
-                    imageScaleType = ImageView.ScaleType.CENTER_INSIDE
+                    imageScaleType = ImageView.ScaleType.CENTER_CROP
                 }
             }
         }
@@ -577,10 +665,39 @@ class ContainerImage @JvmOverloads constructor(
         data["imageTint"]?.let {
             if (it is Int && it != -1) imageTint = it
         }
+        data["imageAspectRatio"]?.let {
+            if (it is Float) imageAspectRatio = it
+            else if (it is Double) imageAspectRatio = it.toFloat()
+        }
 
-        // Update the image view if it exists
         if (currentImageView != null) {
             updateImageView()
+        }
+    }
+
+    // Override the parent's setContainerSize to maintain aspect ratio
+    override fun setContainerSize(width: Int, height: Int, animate: Boolean) {
+        // If we have an image with an aspect ratio, maintain it during resize
+        if (currentBitmap != null && imageAspectRatio > 0) {
+            // Calculate the new dimensions maintaining aspect ratio
+            val newWidth: Int
+            val newHeight: Int
+
+            if (imageAspectRatio >= 1f) {
+                // Landscape or square - use width as reference
+                newWidth = width
+                newHeight = (width / imageAspectRatio).toInt()
+            } else {
+                // Portrait - use height as reference
+                newHeight = height
+                newWidth = (height * imageAspectRatio).toInt()
+            }
+
+            android.util.Log.d("ContainerImage", "Resizing with aspect ratio: $imageAspectRatio, new size: ${newWidth}x${newHeight}")
+            super.setContainerSize(newWidth, newHeight, animate)
+        } else {
+            // No image loaded, use default behavior
+            super.setContainerSize(width, height, animate)
         }
     }
 }

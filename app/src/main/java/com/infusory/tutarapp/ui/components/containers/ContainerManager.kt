@@ -1,13 +1,9 @@
 // ContainerManager.kt
-package com.infusory.tutarapp.ui.utils.containers
+package com.infusory.tutarapp.ui.components.containers
 
 import android.content.Context
 import android.view.ViewGroup
 import android.widget.Toast
-import com.infusory.tutarapp.ui.containers.Container3D
-import com.infusory.tutarapp.ui.containers.ContainerImage
-import com.infusory.tutarapp.ui.containers.ContainerText
-import com.infusory.tutarapp.ui.containers.ContainerBase
 
 class ContainerManager(
     private val context: Context,
@@ -21,65 +17,6 @@ class ContainerManager(
     var onContainerRemoved: ((ContainerBase) -> Unit)? = null
     var onContainerCountChanged: ((Int) -> Unit)? = null
 
-    fun addTextContainer(): ContainerBase? {
-        if (containers.size >= maxContainers) {
-            showMaxContainersMessage()
-            return null
-        }
-
-        val container = ContainerText(context)
-        return addContainer(container, "Text container added")
-    }
-
-    fun add3DContainer(): ContainerBase? {
-        if (containers.size >= maxContainers) {
-            showMaxContainersMessage()
-            return null
-        }
-
-        val container = Container3D(context)
-        return addContainer(container, "3D container added")
-    }
-
-    fun addImageContainer(): ContainerBase? {
-        if (containers.size >= maxContainers) {
-            showMaxContainersMessage()
-            return null
-        }
-
-        val container = ContainerImage(context)
-        return addContainer(container, "Image container added")
-    }
-
-    fun addStandardContainer(): ContainerBase? {
-        if (containers.size >= maxContainers) {
-            showMaxContainersMessage()
-            return null
-        }
-
-        val container = ContainerBase(context, ContainerBase.ContainerType.STANDARD)
-        return addContainer(container, "Standard container added")
-    }
-
-    fun addMinimalContainer(): ContainerBase? {
-        if (containers.size >= maxContainers) {
-            showMaxContainersMessage()
-            return null
-        }
-
-        val container = ContainerBase(context, ContainerBase.ContainerType.MINIMAL)
-        return addContainer(container, "Minimal container added")
-    }
-
-    fun addReadOnlyContainer(): ContainerBase? {
-        if (containers.size >= maxContainers) {
-            showMaxContainersMessage()
-            return null
-        }
-
-        val container = ContainerBase(context, ContainerBase.ContainerType.READ_ONLY)
-        return addContainer(container, "Read-only container added")
-    }
 
     private fun addContainer(container: ContainerBase, message: String): ContainerBase {
         // Set layout params
@@ -217,6 +154,16 @@ class ContainerManager(
         )
     }
 
+    fun addYouTubeContainer(): ContainerBase? {
+        if (containers.size >= maxContainers) {
+            showMaxContainersMessage()
+            return null
+        }
+
+        val container = ContainerYouTube(context)
+        return addContainer(container, "YouTube container added")
+    }
+
     fun getContainerCount(): Int = containers.size
 
     fun getAllContainers(): List<ContainerBase> = containers.toList()
@@ -248,9 +195,9 @@ class ContainerManager(
                 ContainerBase.ContainerType.TEXT -> ContainerText(context)
                 ContainerBase.ContainerType.MODEL_3D -> Container3D(context)
                 ContainerBase.ContainerType.IMAGE -> ContainerImage(context)
-                ContainerBase.ContainerType.STANDARD -> ContainerBase(context, ContainerBase.ContainerType.STANDARD)
-                ContainerBase.ContainerType.MINIMAL -> ContainerBase(context, ContainerBase.ContainerType.MINIMAL)
-                ContainerBase.ContainerType.READ_ONLY -> ContainerBase(context, ContainerBase.ContainerType.READ_ONLY)
+                ContainerBase.ContainerType.PDF -> ContainerPdf(context)
+                ContainerBase.ContainerType.YOUTUBE -> ContainerPdf(context)
+
             }
 
             // Set layout params

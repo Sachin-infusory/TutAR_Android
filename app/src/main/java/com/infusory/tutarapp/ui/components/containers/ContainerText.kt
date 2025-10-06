@@ -1,5 +1,5 @@
 // ContainerText.kt
-package com.infusory.tutarapp.ui.containers
+package com.infusory.tutarapp.ui.components.containers
 
 import android.content.Context
 import android.graphics.Color
@@ -7,8 +7,8 @@ import android.util.AttributeSet
 import android.widget.TextView
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
-import com.infusory.tutarapp.ui.utils.containers.ControlButton
-import com.infusory.tutarapp.ui.utils.containers.ButtonPosition
+import com.infusory.tutarapp.ui.components.containers.ControlButton
+import com.infusory.tutarapp.ui.components.containers.ButtonPosition
 
 class ContainerText @JvmOverloads constructor(
     context: Context,

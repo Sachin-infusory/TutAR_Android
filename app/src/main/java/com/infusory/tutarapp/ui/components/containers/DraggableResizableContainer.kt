@@ -1,5 +1,5 @@
 // UnifiedDraggableZoomableContainer.kt - Pure Zoom/Pan Container
-package com.infusory.tutarapp.ui.utils.containers
+package com.infusory.tutarapp.ui.components.containers
 
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
@@ -42,12 +42,16 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
     // Container properties
     private var containerTranslationX = 0f
     private var containerTranslationY = 0f
-    private var baseWidth = 300
-    private var baseHeight = 300
-    private var currentWidth = 300
-    private var currentHeight = 300
+    protected var baseWidth = 300
+    protected var baseHeight = 300
+    protected var currentWidth = 300
+    protected var currentHeight = 300
     private var minSize = 150
     private var maxSize = 1200
+
+    // Aspect ratio management - can be overridden by subclasses
+    protected var maintainAspectRatio: Boolean = false
+    protected var aspectRatio: Float = 1f  // width / height
 
     // Multi-touch support
     private val scaleGestureDetector: ScaleGestureDetector
@@ -108,9 +112,6 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
 
     // Method to add control buttons dynamically - made open for inheritance
     open fun addControlButtons(buttons: List<ControlButton>) {
-        // Clear existing buttons
-//        clearControlButtons()
-
         buttons.forEach { buttonConfig ->
             val button = createControlButton(buttonConfig.iconRes, buttonConfig.onClick)
             controlButtons.add(button)
@@ -129,12 +130,6 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
         updateButtonExclusionAreas()
     }
 
-//    fun clearControlButtons() {
-//        controlButtons.forEach { removeView(it) }
-//        controlButtons.clear()
-//        buttonExclusionAreas.clear()
-//    }
-
     private fun createControlButton(iconRes: Int, onClick: () -> Unit): ImageView {
         return ImageView(context).apply {
             layoutParams = LayoutParams(dpToPx(24), dpToPx(24))
@@ -151,14 +146,12 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
         }
     }
 
-
     private fun bringButtonsToFront() {
         controlButtons.forEach { button ->
             button.bringToFront()
             button.elevation = 100f
         }
     }
-
 
     private fun positionButton(button: ImageView, position: ButtonPosition) {
         val margin = dpToPx(8)
@@ -195,9 +188,8 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
 
         when (position) {
             ButtonPosition.TOP_START -> {
-                // Position buttons at the very edge of the container
-                val horizontalOffset = dpToPx(2) // Small positive margin from edge
-                val verticalStartOffset = dpToPx(2) // Small positive margin from edge
+                val horizontalOffset = dpToPx(2)
+                val verticalStartOffset = dpToPx(2)
 
                 layoutParams.setMargins(
                     horizontalOffset,
@@ -244,10 +236,9 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
         buttonExclusionAreas.clear()
 
         controlButtons.forEach { button ->
-            // Calculate the area around each button where touches should be ignored for dragging
             val layoutParams = button.layoutParams as LayoutParams
             val buttonSize = dpToPx(24)
-            val touchPadding = dpToPx(16) // Extra touch area around button
+            val touchPadding = dpToPx(16)
 
             val rect = when {
                 layoutParams.gravity and Gravity.TOP != 0 && layoutParams.gravity and Gravity.START != 0 -> {
@@ -262,7 +253,6 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
                 layoutParams.gravity and Gravity.BOTTOM != 0 && layoutParams.gravity and Gravity.END != 0 -> {
                     RectF((currentWidth - buttonSize - touchPadding).toFloat(), (currentHeight - buttonSize - touchPadding).toFloat(), currentWidth.toFloat(), currentHeight.toFloat())
                 }
-                // Add more cases for other positions as needed
                 else -> RectF(0f, 0f, (buttonSize + touchPadding).toFloat(), (buttonSize + touchPadding).toFloat())
             }
 
@@ -276,7 +266,6 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
             return super.onTouchEvent(event)
         }
 
-        // Handle resize gestures first
         val handled = if (isResizingEnabled) scaleGestureDetector.onTouchEvent(event) else false
 
         when (event.actionMasked) {
@@ -286,7 +275,6 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
                 lastTouchY = event.rawY
                 isDragging = false
 
-                // Don't start dragging if we're in button area
                 if (isDraggingEnabled && !isTouchInButtonArea(event.x, event.y)) {
                     parent?.requestDisallowInterceptTouchEvent(true)
                 }
@@ -294,7 +282,6 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
             }
 
             MotionEvent.ACTION_POINTER_DOWN -> {
-                // Multi-touch started - prepare for resizing
                 if (isResizingEnabled && event.pointerCount == 2) {
                     isResizing = true
                     isDragging = false
@@ -306,18 +293,15 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
 
             MotionEvent.ACTION_MOVE -> {
                 if (isResizing && isResizingEnabled && event.pointerCount >= 2) {
-                    // Let ScaleGestureDetector handle resizing
                     return handled
                 } else if (!isResizing && isDraggingEnabled && event.pointerCount == 1) {
-                    // Handle dragging
                     val pointerIndex = event.findPointerIndex(activePointerId)
                     if (pointerIndex < 0) return true
 
                     if (!isDragging) {
-                        // Check if we've moved enough to start dragging
                         val deltaX = abs(event.rawX - lastTouchX)
                         val deltaY = abs(event.rawY - lastTouchY)
-                        if (deltaX > 10 || deltaY > 10) { // Touch slop threshold
+                        if (deltaX > 10 || deltaY > 10) {
                             isDragging = true
                         }
                     }
@@ -332,7 +316,6 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
                         containerTranslationX += dx
                         containerTranslationY += dy
 
-                        // Apply bounds to keep container partially on screen
                         applyScreenBounds()
                         applyPosition()
 
@@ -374,7 +357,6 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
         val parentWidth = parent.width
         val parentHeight = parent.height
 
-        // Allow 80% of container to go off-screen but keep 20% visible
         val minX = -currentWidth * 0.8f
         val maxX = parentWidth - currentWidth * 0.2f
         val minY = -currentHeight * 0.8f
@@ -397,7 +379,6 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
             currentWidth = constrainedWidth
             currentHeight = constrainedHeight
 
-            // Post layout update to avoid crash during touch events
             post {
                 try {
                     val currentLayoutParams = layoutParams
@@ -408,10 +389,7 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
                     }
                     requestLayout()
 
-                    // Update button exclusion areas when size changes
                     updateButtonExclusionAreas()
-
-                    // Adjust position to keep container partially on screen
                     applyScreenBounds()
                     applyPosition()
 
@@ -434,11 +412,34 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
 
             try {
                 val scaleFactor = detector.scaleFactor
-                val newSize = (currentWidth * scaleFactor).toInt()
-                val constrainedSize = newSize.coerceIn(minSize, maxSize)
 
-                if (abs(constrainedSize - currentWidth) > 5) {
-                    resizeContainer(constrainedSize, constrainedSize)
+                // Calculate new dimensions based on whether we maintain aspect ratio
+                val newWidth: Int
+                val newHeight: Int
+
+                if (maintainAspectRatio && aspectRatio > 0) {
+                    // Use the larger dimension as reference to get better scaling behavior
+                    if (aspectRatio >= 1f) {
+                        // Landscape or square - scale based on width
+                        newWidth = (currentWidth * scaleFactor).toInt()
+                        newHeight = (newWidth / aspectRatio).toInt()
+                    } else {
+                        // Portrait - scale based on height
+                        newHeight = (currentHeight * scaleFactor).toInt()
+                        newWidth = (newHeight * aspectRatio).toInt()
+                    }
+                } else {
+                    // Default behavior - maintain square aspect ratio
+                    val newSize = (currentWidth * scaleFactor).toInt()
+                    newWidth = newSize
+                    newHeight = newSize
+                }
+
+                val constrainedWidth = newWidth.coerceIn(minSize, maxSize)
+                val constrainedHeight = newHeight.coerceIn(minSize, maxSize)
+
+                if (abs(constrainedWidth - currentWidth) > 5 || abs(constrainedHeight - currentHeight) > 5) {
+                    resizeContainer(constrainedWidth, constrainedHeight)
                 }
             } catch (e: Exception) {
                 Log.e("Container", "Error during scaling", e)
@@ -453,9 +454,7 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
         }
     }
 
-    // Public methods for content management - made open for inheritance
     open fun setContent(view: View) {
-        // Remove existing content (except buttons)
         val viewsToRemove = mutableListOf<View>()
 
         for (i in 0 until childCount) {
@@ -467,7 +466,6 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
 
         viewsToRemove.forEach { removeView(it) }
 
-        // Add new content with proper margins to avoid button overlap
         val contentLayoutParams = LayoutParams(
             LayoutParams.MATCH_PARENT,
             LayoutParams.MATCH_PARENT
@@ -479,7 +477,7 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
         }
 
         view.layoutParams = contentLayoutParams
-        addView(view, 0) // Add at index 0 so buttons stay on top
+        addView(view, 0)
 
         bringButtonsToFront()
     }
@@ -511,7 +509,6 @@ open class UnifiedDraggableZoomableContainer @JvmOverloads constructor(
         }
     }
 
-    // Public methods for container manipulation - made open for inheritance
     open fun setContainerSize(width: Int, height: Int, animate: Boolean = false) {
         if (animate) {
             val startWidth = currentWidth

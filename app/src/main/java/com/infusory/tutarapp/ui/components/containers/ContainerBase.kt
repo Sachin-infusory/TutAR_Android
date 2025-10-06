@@ -1,12 +1,12 @@
 // ContainerBase.kt
-package com.infusory.tutarapp.ui.containers
+package com.infusory.tutarapp.ui.components.containers
 
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.TextView
-import com.infusory.tutarapp.ui.utils.containers.UnifiedDraggableZoomableContainer
-import com.infusory.tutarapp.ui.utils.containers.ControlButton
-import com.infusory.tutarapp.ui.utils.containers.ButtonPosition
+import com.infusory.tutarapp.ui.components.containers.UnifiedDraggableZoomableContainer
+import com.infusory.tutarapp.ui.components.containers.ControlButton
+import com.infusory.tutarapp.ui.components.containers.ButtonPosition
 
 open class ContainerBase @JvmOverloads constructor(
     context: Context,
@@ -16,12 +16,11 @@ open class ContainerBase @JvmOverloads constructor(
 ) : UnifiedDraggableZoomableContainer(context, attrs, defStyleAttr) {
 
     enum class ContainerType {
-        STANDARD,
         TEXT,
         IMAGE,
         MODEL_3D,
-        MINIMAL,
-        READ_ONLY
+        PDF,
+        YOUTUBE
     }
 
     // Callback for when container requests to be removed
@@ -33,12 +32,7 @@ open class ContainerBase @JvmOverloads constructor(
 
     private fun setupContainerByType() {
         when (containerType) {
-            ContainerType.STANDARD -> setupStandardContainer()
-            ContainerType.MINIMAL -> setupMinimalContainer()
-            ContainerType.READ_ONLY -> setupReadOnlyContainer()
             else -> {
-                // For specialized containers (TEXT, IMAGE, MODEL_3D),
-                // setup will be handled in their respective classes
                 setupStandardContainer()
             }
         }
@@ -116,9 +110,6 @@ open class ContainerBase @JvmOverloads constructor(
 
     protected open fun getDefaultText(): String {
         return when (containerType) {
-            ContainerType.STANDARD -> "Standard Container\nDrag and pinch to resize!"
-            ContainerType.MINIMAL -> "Minimal Container\n(Zoom only)"
-            ContainerType.READ_ONLY -> "Read-Only Container\n(Drag only, no resize)"
             else -> "Container\nInteractive content"
         }
     }

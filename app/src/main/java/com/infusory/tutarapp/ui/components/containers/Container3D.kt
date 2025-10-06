@@ -1,4 +1,4 @@
-package com.infusory.tutarapp.ui.containers
+package com.infusory.tutarapp.ui.components.containers
 
 import com.infusory.tutarapp.R
 import android.content.Context

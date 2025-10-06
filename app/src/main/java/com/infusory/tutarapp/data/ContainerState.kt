@@ -1,7 +1,7 @@
 // ContainerStateData.kt
-package com.infusory.tutarapp.ui.utils
+package com.infusory.tutarapp.ui.components
 
-import com.infusory.tutarapp.ui.containers.ContainerBase
+import com.infusory.tutarapp.ui.components.containers.ContainerBase
 
 /**
  * Data class for saving and loading the complete state of all containers
