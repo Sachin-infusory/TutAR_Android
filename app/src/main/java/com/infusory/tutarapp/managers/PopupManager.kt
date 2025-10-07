@@ -161,28 +161,46 @@ class PopupHandler(private val context: Context) {
         // Bind buttons dynamically
         when (type) {
             ActionType.SAVE -> {
-                popupView.findViewById<Button>(R.id.btnSaveLesson).setOnClickListener {
+                val btnSaveLesson = popupView.findViewById<Button>(R.id.btnSaveLesson)
+                val btnSavePdf = popupView.findViewById<Button>(R.id.btnSavePdf)
+
+                // Set text color to black for visibility
+                btnSaveLesson.setTextColor(Color.BLACK)
+                btnSavePdf.setTextColor(Color.BLACK)
+
+                btnSaveLesson.setOnClickListener {
                     onSaveLesson()
                     Toast.makeText(context, "Save Lesson clicked", Toast.LENGTH_SHORT).show()
                 }
-                popupView.findViewById<Button>(R.id.btnSavePdf).setOnClickListener {
+                btnSavePdf.setOnClickListener {
                     onSavePdf()
                     Toast.makeText(context, "Save PDF clicked", Toast.LENGTH_SHORT).show()
                 }
             }
             ActionType.INSERT -> {
-                popupView.findViewById<Button>(R.id.btnInsertImage).setOnClickListener {
+                val btnInsertImage = popupView.findViewById<Button>(R.id.btnInsertImage)
+                val btnInsertPdf = popupView.findViewById<Button>(R.id.btnInsertPdf)
+                val btnInsertYoutube = popupView.findViewById<Button>(R.id.btnInsertYoutube)
+                val btnInsertWebsite = popupView.findViewById<Button>(R.id.btnInsertWebsite)
+
+                // Set text color to black for visibility
+                btnInsertImage.setTextColor(Color.BLACK)
+                btnInsertPdf.setTextColor(Color.BLACK)
+                btnInsertYoutube.setTextColor(Color.BLACK)
+                btnInsertWebsite.setTextColor(Color.BLACK)
+
+                btnInsertImage.setOnClickListener {
                     onInsertImage()
                 }
-                popupView.findViewById<Button>(R.id.btnInsertPdf).setOnClickListener {
+                btnInsertPdf.setOnClickListener {
                     onInsertPdf()
                     Toast.makeText(context, "Insert PDF clicked", Toast.LENGTH_SHORT).show()
                 }
-                popupView.findViewById<Button>(R.id.btnInsertYoutube).setOnClickListener {
+                btnInsertYoutube.setOnClickListener {
                     onInsertYoutube()
                     Toast.makeText(context, "Insert YouTube clicked", Toast.LENGTH_SHORT).show()
                 }
-                popupView.findViewById<Button>(R.id.btnInsertWebsite).setOnClickListener {
+                btnInsertWebsite.setOnClickListener {
                     onInsertWebsite()
                     Toast.makeText(context, "Insert Website clicked", Toast.LENGTH_SHORT).show()
                 }

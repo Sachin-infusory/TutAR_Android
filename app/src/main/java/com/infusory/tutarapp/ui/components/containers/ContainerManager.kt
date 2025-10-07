@@ -151,7 +151,7 @@ class ContainerManager(
             context,
             "Resizing ${if (!allResizingEnabled) "enabled" else "disabled"} for all containers",
             Toast.LENGTH_SHORT
-        )
+        ).show()
     }
 
     fun addYouTubeContainer(): ContainerBase? {
@@ -206,27 +206,27 @@ class ContainerManager(
                 ContainerBase.ContainerType.MODEL_3D -> Container3D(context)
                 ContainerBase.ContainerType.IMAGE -> ContainerImage(context)
                 ContainerBase.ContainerType.PDF -> ContainerPdf(context)
-                ContainerBase.ContainerType.YOUTUBE -> ContainerPdf(context)
-                ContainerBase.ContainerType.WEBSITE -> ContainerPdf(context)
-
-
+                ContainerBase.ContainerType.YOUTUBE -> ContainerYouTube(context)
+                ContainerBase.ContainerType.WEBSITE -> ContainerWebsite(context)
             }
 
-            // Set layout params
+            // Set layout params with base size
             val layoutParams = when (parentLayout) {
                 is android.widget.RelativeLayout -> android.widget.RelativeLayout.LayoutParams(
-                    state.size.first,
-                    state.size.second
+                    container.getDefaultWidth(),
+                    container.getDefaultHeight()
                 )
                 else -> android.view.ViewGroup.LayoutParams(
-                    state.size.first,
-                    state.size.second
+                    container.getDefaultWidth(),
+                    container.getDefaultHeight()
                 )
             }
             container.layoutParams = layoutParams
 
-            // Restore position and scale
+            // Restore position first
             container.moveContainerTo(state.position.first, state.position.second, animate = false)
+
+            // Then apply scale
             container.zoomTo(state.scale, animate = false)
 
             // Set up remove callback
